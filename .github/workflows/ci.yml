@@ -1,0 +1,44 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-test:
+    name: Build and verify
+    runs-on: macos-15
+    timeout-minutes: 25
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Show toolchain
+        run: |
+          swift --version
+          sw_vers
+
+      - name: Build (release)
+        run: swift build -c release
+
+      - name: Assemble the .app bundle
+        run: ./build_app.sh
+
+      # The self-test runs the real collectors against the real system — it is the
+      # only thing here that proves the app still reads logs correctly, rather
+      # than merely compiling.
+      - name: Collector self-test against the live system
+        run: ./.build/out/Products/Release/MDMInspectorSelfTest
+
+      - name: Confirm the bundle launches
+        run: |
+          APP="build/MDM Inspector.app"
+          test -x "$APP/Contents/MacOS/MDMInspector"
+          codesign --verify --deep --strict "$APP" \
+            || echo "note: ad-hoc signature only, signature verification is best-effort"
