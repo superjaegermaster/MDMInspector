@@ -2,6 +2,8 @@
 
 Native macOS troubleshooting workbench for Apple / Workspace ONE administrators.
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
 **"What happened on this Mac?"** — reconstruct activity chronologically while
 keeping one click away from the original log record.
 
@@ -26,6 +28,14 @@ swift run -c release MDMInspectorSelfTest
 ```
 
 Requires macOS 14+ and the Swift 6 toolchain (Command Line Tools are enough).
+
+## Status
+
+v0.1 — MVP-1 (application shell) and MVP-2 (real Unified Logs) are implemented
+and verified, plus first-pass Workspace ONE, Intune, Jamf and Platform SSO
+sources and a capabilities/permissions centre. Diagnostic intelligence (correlation,
+loop detection, root-cause claims) is deliberately not built — see
+"Known limits" below.
 
 ## What it reads
 
