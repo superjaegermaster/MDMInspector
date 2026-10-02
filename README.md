@@ -90,15 +90,17 @@ Xcode dependency.
 
 ## Status
 
-Working: the three views, Unified Logs, Workspace ONE, Intune, Jamf, Platform
-SSO, and the permissions centre. Not built, on purpose: correlation, loop
-detection, root-cause claims. See [Known limits](#known-limits).
+Working: the three views, 51 sources covering macOS MDM internals, Workspace ONE,
+Intune, Jamf, Platform SSO and other MDM vendors, plus the permissions centre.
+Not built, on purpose: correlation, loop detection, root-cause claims. See
+[Known limits](#known-limits).
 
 ## What it reads
 
 | Source | Where |
 |---|---|
 | Unified Log | `OSLogStore(scope: .system)` — every process, every subsystem |
+| **macOS MDM & platform** | unified: `com.apple.ManagedClient`, `mdmclient`, `installcoordination`, `mobileasset`, `SoftwareUpdate`, `amfi`; plus `/Library/Logs/ManagedClient/ManagedClient.log` |
 | Running Processes | kernel process list; gives name + executable path |
 | macOS | `/var/log/install.log`, `system.log`, `appfirewall.log`, `wifi.log`, `asl`, `DiagnosticReports` |
 | **Microsoft Intune** | `/Library/Logs/Microsoft/Intune`, `~/Library/Logs/Microsoft/Intune`, `IntuneScripts/`, `~/Library/Logs/CompanyPortal.log` |
@@ -106,8 +108,13 @@ detection, root-cause claims. See [Known limits](#known-limits).
 | **Jamf Pro** | `/var/log/jamf.log`, `jamfinstall.log`, `jamf_setup.log`, `JAMFChangeManagement.log`, `/usr/local/jamf/bin` |
 | Jamf (unified log) | `com.jamf*`, processes `jamf` / `JamfDaemon` / `JamfAgent` |
 | **Platform SSO** | `com.apple.AppSSO`, `com.apple.extensiblesso`, `com.apple.heimdal`, plus the vendor extension (Microsoft, Okta); `SSOExtension`, `AppSSOAgent`, `KerberosExtension`, `swcd` |
-| Workspace ONE | `VMwareAirWatchAgent.log`, Hub and agent logs |
-| Others | MSI, Adobe, Jamf, Zscaler, SCCM, Cisco, OneDrive, Microsoft AutoUpdate |
+| Workspace ONE | `VMwareAirWatchAgent.log`, Hub and agent logs, Munki managed installs |
+| Kandji | unified `io.kandji*`; `/Library/Logs/Kandji` |
+| ManageEngine | `/Library/UEMS_Agent/logs` |
+| N-able | `/Library/Logs/N-central Agent`, `/var/log/N-able/N-agent` |
+| Microsoft Defender for Endpoint | `/Library/Logs/Microsoft/mdatp` |
+| Omnissa Horizon | `/var/log/omnissa`, `~/Library/Logs/Omnissa` |
+| Others | MSI, Adobe, Zscaler, SCCM, Cisco, OneDrive, Microsoft AutoUpdate |
 
 Paths come from each vendor's documentation. The obvious guess is often wrong —
 `/Library/Logs/JAMF` doesn't exist; the client log is `/var/log/jamf.log`. A
