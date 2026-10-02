@@ -1,0 +1,63 @@
+name: Bug report
+description: Something is wrong, wrong-looking, or misleading
+title: "[Bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        A bug here means the app showed you something untrue: a wrong value, a
+        record that isn't in the original log, a source that claims data it did
+        not read, or something it says is not installed.
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What did you see?
+      description: What the app showed, and what you expected instead.
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: How can we reproduce it?
+      description: Time range, source selected, display mode (Grouped / Detailed / Raw), and anything you clicked.
+      placeholder: Selected "Last 4 hours", source "Microsoft Intune", display mode Raw...
+    validations:
+      required: true
+
+  - type: input
+    id: app-version
+    attributes:
+      label: Version or commit
+      description: From Help > About, or the git commit you built from.
+      placeholder: 0.1 / abc1234
+    validations:
+      required: false
+
+  - type: input
+    id: macos-version
+    attributes:
+      label: macOS version
+      placeholder: macOS 26.0
+    validations:
+      required: true
+
+  - type: textarea
+    id: raw-record
+    attributes:
+      label: The raw evidence, if you have it
+      description: Paste the original log line from the Inspector's Raw Evidence box. This is usually the fastest route to a fix.
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: privacy
+    attributes:
+      label: Before submitting
+      options:
+        - label: I have removed customer names, hostnames, IP addresses and any other sensitive values from anything I pasted.
+          required: true
+        - label: I searched the existing issues for this already.
+          required: true

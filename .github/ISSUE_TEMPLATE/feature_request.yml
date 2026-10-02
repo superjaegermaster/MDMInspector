@@ -1,0 +1,68 @@
+name: Feature request
+description: Suggest something new, or an improvement to something existing
+title: "[Feature] "
+labels: ["feature request"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for suggesting something. MDM Inspector is built around one rule —
+        **evidence first** — so a strong request usually starts from a real
+        investigation that got stuck.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem were you trying to solve?
+      description: Describe the situation, not the solution. "I couldn't tell whether the profile actually installed" is more useful than "add a profile status column".
+      placeholder: I was trying to find out whether...
+    validations:
+      required: true
+
+  - type: textarea
+    id: evidence
+    attributes:
+      label: What did you have to fall back on?
+      description: Terminal, Console, another tool, reading a script — this tells us what the app failed to do for you.
+    validations:
+      required: false
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: What would you like it to do instead?
+    validations:
+      required: false
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Which part of the app is this about?
+      multiple: true
+      options:
+        - Dashboard
+        - Timeline / event list
+        - Inspector / raw evidence
+        - Sources (adding a new log source)
+        - Capabilities / permissions
+        - LIVE mode
+        - Documentation
+        - Something else
+    validations:
+      required: true
+
+  - type: textarea
+    id: vendor
+    attributes:
+      label: If this concerns a specific product, which one?
+      description: e.g. Intune, Workspace ONE, Jamf, Kandji, Platform SSO with Entra / Okta / Google
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: confirm
+    attributes:
+      label: Before submitting
+      options:
+        - label: I searched the existing issues for this already.
+          required: true
