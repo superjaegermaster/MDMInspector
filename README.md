@@ -13,6 +13,15 @@ console.
 
 ---
 
+## Documentation
+
+- **[docs/INTERFACE.md](docs/INTERFACE.md)** — a walk through every view and
+  control: the dashboard, the timeline and its three display modes, the
+  Inspector, the capabilities centre, Historical vs LIVE, and what the tool
+  deliberately refuses to claim.
+- Screenshots live in `docs/screenshots/` and are regenerated with
+  `python3 tools/capture_screenshots.py` (needs an unlocked screen).
+
 ## Build & run
 
 ```zsh
@@ -133,6 +142,17 @@ advance the bar on completion, so it never stalls or jumps backwards.
 Vendor unified-log sources only search a short recent window when none of their
 processes are running, and say so explicitly rather than implying they searched
 the whole range.
+
+## Regenerating documentation screenshots
+
+```zsh
+python3 tools/capture_screenshots.py
+```
+
+Each view is opened through the app's launch arguments (`-startView`,
+`-displayMode`, `-timeRange`) rather than by clicking, so captures are
+reproducible. The script aborts if the screen is locked instead of saving a
+picture of the login screen. Review the images before committing them.
 
 ## Test checklist
 
