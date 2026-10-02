@@ -127,8 +127,26 @@ struct SelfTest {
               br.diagnostics.contains { $0.message.contains("most recent") })
         check("events are sorted newest-first",
               zip(br.events, br.events.dropFirst()).allSatisfy { $0.timestamp >= $1.timestamp })
-        check("the newest kept event is actually recent (< 5 min old)",
-              br.events.first.map { Date().timeIntervalSince($0.timestamp) < 300 } ?? false)
+        // Recency is a property of the MACHINE, not of the code: a quiet or
+        // freshly-booted machine may have no unified records in the last few
+        // minutes, and then "the newest event should be recent" is not
+        // something the collector can be blamed for.
+        //
+        // This check exists to catch a real regression - an earlier version kept
+        // the OLDEST records of the window instead of the newest. So it only
+        // applies when the machine actually has recent records to keep.
+        let hasRecentRecords = await unifiedLogHasRecordsNewerThan(seconds: 300)
+        if hasRecentRecords {
+            check("the newest kept event is actually recent (< 5 min old)",
+                  br.events.first.map { Date().timeIntervalSince($0.timestamp) < 300 } ?? false)
+        } else {
+            print("SKIP  newest-event recency: this machine has no unified records in the last 5 min")
+        }
+        // Always assert the weaker, machine-independent property: kept records
+        // must lie inside the requested window.
+        let windowStart = Date().addingTimeInterval(-86400)
+        check("kept events fall inside the requested 24h window",
+              br.events.allSatisfy { $0.timestamp >= windowStart })
 
         // A full refresh must be interactive. Folder sources (DiagnosticReports,
         // agent log dirs) used to re-parse everything on every refresh, which
@@ -229,6 +247,20 @@ struct SelfTest {
 
         print(fail == 0 ? "\nALL CHECKS PASSED" : "\n\(fail) CHECK(S) FAILED")
         exit(fail == 0 ? 0 : 1)
+    }
+
+    /// Does the unified log contain any record newer than `seconds`?
+    static func unifiedLogHasRecordsNewerThan(seconds: TimeInterval) async -> Bool {
+        let store = try? OSLogStore(scope: .system)
+        guard let store else { return false }
+        let start = Date().addingTimeInterval(-Double(seconds))
+        guard let seq = try? store.getEntries(
+            at: store.position(date: start),
+            matching: NSPredicate(format: "timestamp >= %@", start as NSDate)) else {
+            return false
+        }
+        for _ in seq { return true }
+        return false
     }
 
     /// Resident set size of this process, via the task_info API.
