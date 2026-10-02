@@ -13,14 +13,28 @@ console.
 
 ---
 
+## Screenshots
+
+![Dashboard](docs/screenshots/01-dashboard.png)
+
+![Timeline and Inspector](docs/screenshots/02-timeline.png)
+
+| | |
+|---|---|
+| **Dashboard** — event/error/warning/source counts, recent errors, activity by source | `docs/screenshots/01-dashboard.png` |
+| **Timeline** — three panes, millisecond timestamps, populated Inspector | `docs/screenshots/02-timeline.png` |
+| **Raw evidence** — the original log record, verbatim | `docs/screenshots/03-inspector.png` |
+| **Capabilities** — per-source status and permission remediation | `docs/screenshots/04-capabilities.png` |
+
+All are real runs on a live Mac, regenerated with
+`python3 tools/capture_screenshots.py` (needs an unlocked screen).
+
 ## Documentation
 
 - **[docs/INTERFACE.md](docs/INTERFACE.md)** — a walk through every view and
   control: the dashboard, the timeline and its three display modes, the
   Inspector, the capabilities centre, Historical vs LIVE, and what the tool
   deliberately refuses to claim.
-- Screenshots live in `docs/screenshots/` and are regenerated with
-  `python3 tools/capture_screenshots.py` (needs an unlocked screen).
 
 ## Build & run
 

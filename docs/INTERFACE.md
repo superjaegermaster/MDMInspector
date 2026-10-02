@@ -4,10 +4,12 @@ A walk through every screen and control, and — more usefully — what each one
 good for. All figures below are real output from a live run on a Mac (macOS 26,
 40 collectors registered, ~20,700 events in the last 30 minutes).
 
-> **Screenshots are generated, not hand-drawn.** Run
+> **Screenshots are generated, not mocked up.** Run
 > `python3 tools/capture_screenshots.py` (needs an unlocked screen) to refresh
-> `docs/screenshots/`. Each view is opened through the app's launch arguments
-> rather than by clicking, so the images are reproducible.
+> `docs/screenshots/`. Every view is opened through the app's launch arguments
+> rather than by synthetic clicks, and each capture is gated on the status bar
+> actually reporting loaded events — so a half-loaded UI can never be
+> committed. All four images below are real runs on a live Mac.
 
 ---
 
@@ -63,6 +65,8 @@ filter the timeline to that source. Purely descriptive: a large *Other* bar
 usually means unrecognised processes, which is information in itself rather than
 a problem.
 
+![Dashboard](screenshots/01-dashboard.png)
+
 ---
 
 ## 2. Timeline — the primary investigation surface
@@ -96,6 +100,8 @@ second, and without that precision you cannot tell which came first.
 | **Grouped** | Events collapsed under their process | "Show me everything this one process did" |
 | **Detailed** | One row per event | Chronological reading — the default |
 | **Raw** | The original log record, verbatim | Confirming anything, before quoting it |
+
+![Timeline with the Inspector open](screenshots/02-timeline.png)
 
 All three render **every** event that passed the filters. Grouping is
 presentation, never deletion — the same 20,721 events are in each mode, and no
@@ -141,6 +147,8 @@ cause claim.
 is the point of the whole tool: whatever the UI suggests, you can always get
 back to what the system actually wrote.
 
+![Raw evidence view](screenshots/03-inspector.png)
+
 ---
 
 ## 4. Capabilities — what can be read, and why not
@@ -152,6 +160,8 @@ Every registered source with its real status:
   remediation steps
 - ✕ **Not present on this Mac** — an honest "this product isn't installed", which
   is *not* a permissions error and never reported as one
+
+![Capabilities](screenshots/04-capabilities.png)
 
 Also documents the privacy stance: no telemetry, no analytics, no network calls,
 logs read on demand and held in memory only.
@@ -205,4 +215,9 @@ python3 tools/capture_screenshots.py            # needs an unlocked screen
 ```
 
 The script fails fast if the screen is locked rather than saving a picture of
-the login screen.
+the login screen, refuses to capture a view it could not bring to the front, and
+waits for the status bar to report loaded events before each shot.
+
+Views are selected with `-startView`, `-displayMode`, `-timeRange` and
+`-selectEvent firstError` (which preselects an error so the Inspector is
+populated without synthesised clicks).
