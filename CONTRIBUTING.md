@@ -1,80 +1,74 @@
 # Contributing
 
-Thanks for looking. This tool is small and evidence-driven, so contributions that
-fit are ones that make the evidence easier to reach, or that make a claim more
-honest.
+## Issues and pull requests
 
-## Issues vs pull requests
-
-The distinction trips people up, so, briefly:
-
-| You want to… | Use |
+| You want to | Use |
 |---|---|
-| Suggest a feature, report a bug, ask a question | **Issue** |
-| Propose a change to the code | **Pull request** |
+| Suggest a feature, report a bug, ask a question | Issue |
+| Propose a code change | Pull request |
 
-An issue is a conversation. A pull request is a proposed edit to a file. They
-link together all the time — open an issue, someone proposes a fix in a pull
-request that closes it.
+An issue is a conversation; a pull request is an edit to a file. They usually
+pair up: someone opens an issue, someone else proposes a fix in a PR that closes
+it.
 
-Usage questions go in **Discussions** rather than Issues; Issues are easier to
-search later when they hold real bugs and real feature requests.
+Usage questions go in Discussions. Issues stay easier to search that way.
 
 ## Reporting a bug
 
-A bug means the app showed you something untrue: a wrong value, a record that
+A bug means the app showed you something untrue: a wrong number, a record that
 isn't in the original log, a source claiming data it didn't read, or a product
-reported as missing when it's installed.
+reported missing when it's installed.
 
-The **raw evidence** is what makes a bug fixable in minutes instead of days. In
-the Inspector, open an event and copy the Raw Evidence box into the report.
+Paste the raw evidence. Open the event, copy the Raw Evidence box, put it in the
+issue. That turns a week of investigation into an afternoon.
 
-Please strip customer names, hostnames and IP addresses from anything you paste.
+Strip customer names, hostnames and IP addresses first. The bug template asks you
+to.
 
 ## Adding a log source
 
-This is the most useful contribution, and the easiest to get right.
+The most useful contribution, and easy to get right. A source is one entry in
+`Collectors/CollectorRegistry.swift`.
 
-A source is one entry in `Collectors/CollectorRegistry.swift`. Three rules:
+Three things to get right:
 
-1. **Use the vendor's documented path.** Do not guess. If you are adding
-   Microsoft Intune or Jamf support, read their docs — the obvious path is
-   frequently wrong (`/Library/Logs/JAMF` does not exist; the client log is
-   `/var/log/jamf.log`).
-2. **Keep it evidence-first.** The original record is always preserved verbatim
-   in `rawRecord`. Never replace a log line with an interpretation.
-3. **Say what you did not read.** If a source caps, window or skips data, it must
-   say so in a `DiagnosticEvent`. A capped read that claims to be complete is
-   the worst bug this project can ship.
+**Use the vendor's documented path.** The obvious guess is usually wrong.
+`/Library/Logs/JAMF` doesn't exist — the Jamf client log is
+`/var/log/jamf.log`. Read the docs.
 
-Add a self-test assertion for the path, so a plausible-but-wrong guess gets
-caught rather than silently returning nothing.
+**Keep the original record.** It goes in `rawRecord` verbatim. Don't swap a log
+line for your interpretation of it.
 
-## What we won't merge
+**Say what you didn't read.** If a source caps, windows or skips anything, that
+goes in a `DiagnosticEvent`. A capped read that looks complete is the worst bug
+this project can ship.
 
-- Anything that fabricates evidence: guessed executable paths, invented
-  timestamps, "diagnosed" errors the log doesn't actually say
+Add a self-test assertion for the path.
+
+## What won't be merged
+
+- Evidence that isn't there: guessed executable paths, invented timestamps,
+  diagnoses the log doesn't support
 - Automatic collapsing of repetitive events
-- Automatic root-cause claims, loop detection or health scores
-- Anything that sends data off the machine. There is no telemetry, and it is
-  staying that way
+- Automatic root-cause claims, loop detection, health scores
+- Anything that sends data off the machine
 
-These aren't style objections. The entire value of the tool is that an admin can
-trust it and get back to the original record.
+Not style objections. The whole value of the tool is that you can trust it and
+get back to the original record.
 
 ## Building
 
 ```zsh
-./build_app.sh                          # release build → build/MDM Inspector.app
-swift run -c release MDMInspectorSelfTest   # 63 checks against the live system
+./build_app.sh
+swift run -c release MDMInspectorSelfTest
 ```
 
-The self-test runs the real collectors against the real Mac. Please run it before
-opening a pull request — a change that slows a collector or inflates memory will
-show up there, even though it looks fine in the UI.
+The self-test runs the real collectors against the real Mac. Run it before
+opening a PR. A change that slows a collector or inflates memory shows up there
+even when it looks fine in the UI.
 
 ## Screenshots
 
 ```zsh
-python3 tools/capture_screenshots.py     # needs an unlocked screen
+python3 tools/capture_screenshots.py
 ```
