@@ -1,15 +1,61 @@
 # MDM Inspector
 
-Native macOS troubleshooting workbench for Apple / Workspace ONE administrators.
-
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-**"What happened on this Mac?"** — reconstruct activity chronologically while
-keeping one click away from the original log record.
+### The problem
 
-Local only. No Workspace ONE API, no cloud backend, no telemetry, no persistent
-database. It reports what the Mac knows, not what you assume happened in the
-console.
+Something went wrong on a Mac. An app didn't install. A profile didn't apply. The
+Hub looks stuck. A user is getting prompts they shouldn't be.
+
+The Mac has the answer. It is just spread across a dozen places:
+
+```
+/var/log/install.log                       macOS installer
+Unified log  (log show --predicate …)      one subsystem at a time
+/var/log/jamf.log                          Jamf client: jamf.log, jamfinstall.log
+/Library/Logs/Microsoft/Intune             Intune agent: IntuneMDMDaemon, IntuneMDMAgent
+~/Library/Logs/CompanyPortal.log           Company Portal
+/var/log/VMwareAirWatchAgent.log           Workspace ONE Intelligent Hub
+/Library/Logs/DiagnosticReports            crashes
+…plus Console.app, filtered by hand, every time
+```
+
+So you read `install.log`, find nothing conclusive, pivot to Console, filter by
+`subsystem`, wonder whether the failure is macOS or the agent that delivered the
+package, go and read the agent's own log, notice the timestamps nearly line up,
+and go back to the start.
+
+**That is the scattered-logs problem.** The evidence is all on one machine. The
+timing is what matters, and timing is exactly what scattered logs destroy.
+
+### What this is
+
+**"What happened on this Mac?"**
+
+A native macOS app that puts those logs in one place and lays them out on a
+single timeline, in order, with millisecond precision — so you can see that the
+Hub download finished at `10:42:48.014`, `installer` started at `10:42:48.391`,
+and it failed at `10:42:52.123`. Three sources, one story, one screen.
+
+Run it on any managed Mac — the one in front of you, the one a user just handed
+you, or the one you are about to ship. It reads only what that Mac has.
+
+And when it shows you an error, the original log line is always one click away.
+Interpretation never replaces evidence.
+
+### Who it's for
+
+Apple, Workspace ONE, Intune and Jamf administrators — the person who gets the
+call when something is broken, not the person watching a dashboard.
+
+### What it is not
+
+Local only. No Workspace ONE or Intune API, no cloud backend, no telemetry, no
+persistent database. Nothing leaves the Mac.
+
+It reports **what the Mac knows**, not what you assume happened in the console.
+If the local evidence shows a command arrived, it says the command arrived — and
+it will not tell you the server processed it, because that evidence isn't here.
 
 ---
 
