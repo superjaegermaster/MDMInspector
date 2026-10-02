@@ -15,19 +15,50 @@ console.
 
 ## Screenshots
 
+All real runs on a live Mac — regenerated with `python3 tools/capture_screenshots.py`.
+
+### Dashboard
+
+Event, error, warning and source counts; recent errors (click any row to jump to
+it in the Timeline); activity by source.
+
 ![Dashboard](docs/screenshots/01-dashboard.png)
+
+### Timeline and Inspector
+
+Three panes: Sources sidebar with the discovered process list, millisecond-precision
+event rows, and an Inspector showing a real event with its executable path,
+subsystem, related records and raw evidence.
 
 ![Timeline and Inspector](docs/screenshots/02-timeline.png)
 
-| | |
-|---|---|
-| **Dashboard** — event/error/warning/source counts, recent errors, activity by source | `docs/screenshots/01-dashboard.png` |
-| **Timeline** — three panes, millisecond timestamps, populated Inspector | `docs/screenshots/02-timeline.png` |
-| **Raw evidence** — the original log record, verbatim | `docs/screenshots/03-inspector.png` |
-| **Capabilities** — per-source status and permission remediation | `docs/screenshots/04-capabilities.png` |
+### Raw evidence
 
-All are real runs on a live Mac, regenerated with
-`python3 tools/capture_screenshots.py` (needs an unlocked screen).
+The original log record, verbatim — selectable and copyable with `⇧⌘C`. This is
+the point of the tool: whatever the UI suggests, you can always get back to what
+the system actually wrote.
+
+![Raw evidence](docs/screenshots/03-inspector.png)
+
+### Capabilities
+
+Per-source status, including an honest "not present on this Mac" for products
+that aren't installed, plus the Full Disk Access remediation path.
+
+![Capabilities](docs/screenshots/04-capabilities.png)
+
+## Contributing
+
+New here, or new to GitHub? Start with **[CONTRIBUTING.md](CONTRIBUTING.md)** —
+it explains the one distinction people trip over:
+
+- **Issues** — feature requests, bugs, questions. This is what you want for
+  tracking requests.
+- **Pull requests** — a proposed change to the code itself.
+
+Feature requests and bugs have forms that ask for the information needed to act
+on them, so the New issue button offers **Feature request**, **Bug report** and a
+blank issue. Usage questions are better in **Discussions**.
 
 ## Documentation
 
