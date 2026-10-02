@@ -191,5 +191,4 @@ picture of the login screen. Review the images before committing them.
 
 Custom date ranges, automatic collapsing, health scores, root-cause claims,
 loop detection, PPPC payload generation and remote investigation are deliberately
-out of scope. The unified log needs Full Disk Access; every other source degrades
-gracefully and says so.
+out of scope. 
