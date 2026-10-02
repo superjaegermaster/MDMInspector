@@ -124,6 +124,76 @@ public enum CollectorRegistry {
             displayName: "Kerberos (Heimdal)",
             path: "/var/log/krb5-services.log"))
 
+        // --- macOS MDM & platform --------------------------------------
+        // The subsystems an Apple admin actually greps for when a profile or
+        // an MDM command misbehaves. Until now these were only reachable through
+        // the catch-all unified source, mixed in with everything else.
+        collectors.append(VendorLogCollector(
+            id: "macos-mdm-unified",
+            displayName: "macOS MDM & Platform (Unified Log)",
+            detail: "Profile installation, MDM commands, app install coordination, software update and Gatekeeper: com.apple.ManagedClient, mdmclient, installcoordination, mobileasset, SoftwareUpdate, amfi",
+            subsystemPrefixes: ["com.apple.ManagedClient", "com.apple.mdmclient",
+                               "com.apple.installcoordination", "com.apple.mobileasset",
+                               "com.apple.mac.install", "com.apple.SoftwareUpdate",
+                               "com.apple.amfi"],
+            processNames: ["mdmclient", "profiles", "installd", "softwareupdated",
+                           "mobileassetd", "AMASManager", "assetd", "nsurlsessiond"],
+            source: .mdm
+        ))
+        // Apple's own profile-install log. Not part of unified logging; parts
+        // of ManagedClient still write here (Apple's profile docs).
+        collectors.append(FileLogCollector(
+            id: "macos-managedclient-log",
+            displayName: "ManagedClient Profile Log",
+            path: "/Library/Logs/ManagedClient/ManagedClient.log"))
+        // Workspace ONE software distribution (managed installs), documented by
+        // Omnissa in the macOS management troubleshooting guide.
+        collectors.append(FileLogCollector(
+            id: "ws1-managed-installs",
+            displayName: "WS1 Managed Installs (Munki)",
+            path: "/Library/Application Support/AirWatch/Data/Munki/Managed Installs/Logs"))
+
+        // --- Other MDM vendors ------------------------------------------
+        // Paths below are taken from each vendor's own documentation.
+        collectors.append(VendorLogCollector(
+            id: "kandji-unified",
+            displayName: "Kandji (Unified Log)",
+            detail: "Kandji agent: subsystem io.kandji.* (Kandji docs)",
+            subsystemPrefixes: ["io.kandji"],
+            processNames: ["kandji", "kandjid", "KandjiAgent"],
+            source: .mdm
+        ))
+        collectors.append(FileLogCollector(
+            id: "kandji-logs",
+            displayName: "Kandji",
+            path: "/Library/Logs/Kandji"))
+        collectors.append(FileLogCollector(
+            id: "manageengine-logs",
+            displayName: "ManageEngine",
+            path: "/Library/UEMS_Agent/logs"))
+        collectors.append(FileLogCollector(
+            id: "nable-agent-logs",
+            displayName: "N-able Agent",
+            path: "/Library/Logs/N-central Agent"))
+        collectors.append(FileLogCollector(
+            id: "nable-nagent",
+            displayName: "N-able N-agent",
+            path: "/var/log/N-able/N-agent"))
+        collectors.append(FileLogCollector(
+            id: "horizon-agent-logs",
+            displayName: "Omnissa Horizon Agent",
+            path: "/var/log/omnissa"))
+        collectors.append(FileLogCollector(
+            id: "horizon-client-logs",
+            displayName: "Omnissa Horizon Client",
+            path: NSString(string: "~/Library/Logs/Omnissa").expandingTildeInPath))
+        // Microsoft Defender for Endpoint on macOS: mdatp logs, including
+        // install.log and microsoft-defender_core.log.
+        collectors.append(FileLogCollector(
+            id: "mde-logs",
+            displayName: "Microsoft Defender for Endpoint",
+            path: "/Library/Logs/Microsoft/mdatp"))
+
         return collectors
     }
 }

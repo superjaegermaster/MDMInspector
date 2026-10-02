@@ -199,6 +199,49 @@ struct SelfTest {
                   }
               })
 
+        // macOS MDM / platform coverage. Subsystem names come from Apple's
+        // profile-logging docs, not from guesswork.
+        let mdmIDs = ["macos-mdm-unified", "macos-managedclient-log",
+                      "ws1-managed-installs", "kandji-unified", "kandji-logs",
+                      "manageengine-logs", "nable-agent-logs", "mde-logs",
+                      "horizon-agent-logs"]
+        for iid in mdmIDs {
+            check("MDM source \(iid) is registered",
+                  collectors.contains { $0.id == iid })
+        }
+        let mdmUni = collectors.first { $0.id == "macos-mdm-unified" }
+        let mdmResult = await mdmUni!.collect(
+            interval: DateInterval(start: Date().addingTimeInterval(-900), end: Date()),
+            limit: 3000)
+        print("macOS MDM subsystems: \(mdmResult.events.count) records in the last 15 min")
+        check("macOS MDM subsystem source returns records on a live Mac",
+              mdmResult.events.count > 0)
+        check("macOS MDM records carry an Apple MDM subsystem",
+              mdmResult.events.contains { $0.subsystem.hasPrefix("com.apple.ManagedClient")
+                                      || $0.subsystem.hasPrefix("com.apple.mdmclient")
+                                      || $0.process == "mdmclient" })
+        check("macOS MDM records classify as MDM",
+              mdmResult.events.contains { $0.matches(.mdm) })
+
+        // Documented paths, pinned so a plausible guess can't creep back in.
+        let registry = collectors.map(\.detail).joined(separator: " ")
+        let documentedPaths = ["/Library/Logs/ManagedClient/ManagedClient.log",
+                               "/Library/Logs/Microsoft/mdatp",
+                               "/Library/UEMS_Agent/logs",
+                               "io.kandji"]
+        for known in documentedPaths {
+            check("documented path/subsystem present: \(known)", registry.contains(known))
+        }
+
+        check("Kandji classifies as MDM",
+              SourceCategory.classify(process: "kandjid") == .mdm)
+        check("ManageEngine agent classifies as MDM",
+              SourceCategory.classify(process: "MEAgent") == .mdm
+              || SourceCategory.classifyAll(process: "uems_agent").contains(.mdm))
+        check("N-able agent classifies as MDM",
+              SourceCategory.classify(process: "Mac_agent") == .mdm
+              || SourceCategory.classifyAll(process: "nagentd").contains(.mdm))
+
         // Progress: every collector must emit a handler-visible fraction and the
         // overall bar must only ever move forward.
         @MainActor func progressRun() async -> (Bool, Bool, Double) {

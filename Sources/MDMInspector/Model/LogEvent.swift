@@ -168,6 +168,19 @@ public enum SourceCategory: String, CaseIterable, Identifiable, Hashable {
             || has("identityservices") || has("authenticatorservices") {
             add(.mdm)
         }
+        // Other MDM vendors are MDM too, so they bucket with Apple's MDM rather
+        // than landing in "other" where nobody looks.
+        if has("kandji") || has("hexnode") || has("scalefusion") || has("manageengine")
+            || has("uems") || has("ncentral") || has("n-able") || has("nagent")
+            || has("na able") || has("simplemdm") || has("mosyle") || has("meraki")
+            || has("addigy") || has("cognito") || has("intune.browser") {
+            add(.mdm)
+        }
+        // Omnissa Horizon is VDI, not MDM — it belongs with the other
+        // enterprise agents that get in the way of installs.
+        if has("omnissa") || has("horizon") || has("viewagent") {
+            add(.other)
+        }
 
         // --- Platform SSO -------------------------------------------------
         // Company Portal lands here too: the Enterprise SSO extension is hosted
