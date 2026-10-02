@@ -33,8 +33,12 @@ jobs:
       # The self-test runs the real collectors against the real system — it is the
       # only thing here that proves the app still reads logs correctly, rather
       # than merely compiling.
+      #
+      # Invoked via `swift run` rather than a hardcoded path: SwiftPM places an
+      # executable in a directory named after its *target*, which is not the same
+      # across SwiftPM versions, so the literal path differs between machines.
       - name: Collector self-test against the live system
-        run: ./.build/out/Products/Release/MDMInspectorSelfTest
+        run: swift run -c release MDMInspectorSelfTest
 
       - name: Confirm the bundle launches
         run: |
