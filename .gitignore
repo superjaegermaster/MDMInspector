@@ -1,0 +1,23 @@
+# Build artifacts
+.build/
+build/
+*.o
+*.swiftmodule
+.swiftpm/
+
+# macOS
+.DS_Store
+*.dSYM/
+
+# Editor
+.vscode/
+.idea/
+*.xcodeproj
+*.xcworkspace
+
+# Log archives / diagnostic captures that may contain sensitive endpoint data.
+# These are evidence from a real machine — never commit them.
+*.logarchive/
+*.log
+*.ips
+sysdiagnose*.tar.gz
