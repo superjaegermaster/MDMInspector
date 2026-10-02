@@ -51,6 +51,10 @@ public final class InspectorModel: ObservableObject {
     /// `-timeRange 5m|15m|30m|1h|4h|24h` and `-displayMode grouped|detailed|raw`
     /// so any pane can be opened directly for verification without having to
     /// drive the segmented controls by hand.
+    /// Deferred selection request from `-selectEvent`.
+    private enum PendingSelection { case first, firstError }
+    private var selectFirst: PendingSelection?
+
     private func applyLaunchArguments() {
         let args = ProcessInfo.processInfo.arguments
         var i = 1
@@ -63,6 +67,11 @@ public final class InspectorModel: ObservableObject {
                 timeRange = range
             } else if key == "-displayMode", let dm = DisplayMode(rawValue: value.capitalized) {
                 displayMode = dm
+            } else if key == "-selectEvent" {
+                // "first" or "firstError": preselect an event once data has
+                // loaded, so the Inspector pane can be captured without having
+                // to synthesise clicks into a SwiftUI scroll view.
+                selectFirst = (value == "firstError") ? .firstError : .first
             }
             i += 2
         }
@@ -204,8 +213,20 @@ public final class InspectorModel: ObservableObject {
         diagnostics = diags
         lastLoaded = Date()
         refreshCapabilities()
+        applyPendingSelection()
         loadProgress = 1
         loadStage = "Loaded"
+    }
+
+    /// Honour a `-selectEvent` request once events exist.
+    private func applyPendingSelection() {
+        guard let want = selectFirst, !events.isEmpty else { return }
+        selectFirst = nil
+        if want == .firstError {
+            selectedEvent = events.first { $0.severity >= .error } ?? events[0]
+        } else {
+            selectedEvent = events[0]
+        }
     }
 
     /// Change the range and reload the snapshot.
