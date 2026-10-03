@@ -46,7 +46,7 @@ cat > "$APP/Contents/Info.plist" <<PLIST
     <key>CFBundleVersion</key><string>$VERSION</string>
     <key>LSMinimumSystemVersion</key><string>14.0</string>
     <key>NSHighResolutionCapable</key><true/>
-    <key>NSSupportsAutomaticTermination</key><false/>
+    <key>NSSupportsAutomaticTermination</key><true/>
     <key>NSRequiresAquaSystemAppearance</key><false/>
     <key>NSHumanReadableCopyright</key><string>Local-only log evidence viewer. No telemetry.</string>
     <key>CFBundleDocumentTypes</key>
