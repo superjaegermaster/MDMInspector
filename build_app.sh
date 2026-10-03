@@ -32,6 +32,11 @@ rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 cp "$BIN" "$APP/Contents/MacOS/MDMInspector"
 
+# Copy icon if it exists
+if [[ -f "$ROOT/Sources/MDMInspector/Resources/MDMInspector.icns" ]]; then
+    cp "$ROOT/Sources/MDMInspector/Resources/MDMInspector.icns" "$APP/Contents/Resources/"
+fi
+
 cat > "$APP/Contents/Info.plist" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -44,6 +49,7 @@ cat > "$APP/Contents/Info.plist" <<PLIST
     <key>CFBundlePackageType</key><string>APPL</string>
     <key>CFBundleShortVersionString</key><string>$VERSION</string>
     <key>CFBundleVersion</key><string>$VERSION</string>
+    <key>CFBundleIconFile</key><string>MDMInspector</string>
     <key>LSMinimumSystemVersion</key><string>14.0</string>
     <key>NSHighResolutionCapable</key><true/>
     <key>NSSupportsAutomaticTermination</key><true/>
@@ -61,9 +67,18 @@ cat > "$APP/Contents/Info.plist" <<PLIST
 </plist>
 PLIST
 
+# Sign AFTER the bundle is complete. Editing any file after this point
+# invalidates the signature and Gatekeeper rejects the app, which is what
+# made an earlier build unusable.
 echo "==> codesigning (ad-hoc)"
 codesign --force --sign - --timestamp=none "$APP" 2>&1 | sed 's/^/    /' || {
     echo "    ad-hoc signing failed; the app will still run locally" >&2
+}
+
+echo "==> verifying signature"
+codesign --verify --deep --strict "$APP" || {
+    echo "signature verification FAILED - do not distribute this build" >&2
+    exit 1
 }
 
 echo "==> done: $APP"
