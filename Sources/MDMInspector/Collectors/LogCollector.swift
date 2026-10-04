@@ -78,16 +78,12 @@ public final class UnifiedLogCollector: LogCollector {
     public init(maxRecords: Int = 20000) { self.maxRecords = maxRecords }
 
     public func probe() -> CapabilityStatus {
-        do {
-            _ = try OSLogStore(scope: .system)
-            return .available("Available")
-        } catch {
-            // A store that can be created but yields nothing is a permissions
-            // problem, not a missing source.
-            return .permissionRequired(
-                "Permission required — MDM Inspector cannot open the system-wide log store. Grant Full Disk Access (System Settings → Privacy & Security → Full Disk Access), then reopen the app."
-            )
-        }
+        // Reads a short window for real instead of inferring readability from
+        // whether the store could be constructed. Creating an OSLogStore does not
+        // read anything, and on a Mac with no Full Disk Access grant the store
+        // opens and returns hundreds of thousands of entries - so the old check
+        // both over- and under-reported.
+        UnifiedLogProbe.status(for: UnifiedLogProbe.readCached(), sourceName: displayName)
     }
 
     public func collect(interval: DateInterval, limit: Int) async -> CollectResult {

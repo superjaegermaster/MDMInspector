@@ -27,15 +27,44 @@ public final class FileLogCollector: LogCollector {
         guard FileManager.default.fileExists(atPath: path, isDirectory: &isDir) else {
             return .unavailable("Not present on this Mac")
         }
-        if isDir.boolValue {
-            return FileManager.default.isReadableFile(atPath: path)
-                ? .available("Directory readable")
-                : .permissionRequired("Permission required — grant Full Disk Access to list this folder")
+        // Read for real rather than trusting isReadableFile, which only checks
+        // the mode bits and happily reports a path as readable when an ancestor
+        // directory blocks traversal (EPERM on the way in, not on the file).
+        do {
+            if isDir.boolValue {
+                _ = try FileManager.default.contentsOfDirectory(atPath: path)
+                return .available("Directory readable")
+            } else {
+                _ = try Data(contentsOf: URL(fileURLWithPath: path), options: .mappedIfSafe)
+                return .available("Readable")
+            }
+        } catch let e as NSError {
+            return Self.status(for: e, path: path)
+        } catch {
+            return .unavailable("Cannot read \(path): \(error.localizedDescription)")
         }
-        guard FileManager.default.isReadableFile(atPath: path) else {
-            return .permissionRequired("Permission required — grant Full Disk Access (System Settings → Privacy & Security → Full Disk Access)")
+    }
+
+    /// Classifies a read failure without guessing at its cause.
+    ///
+    /// "Not permitted" is reported as a permission problem because the OS said
+    /// so. Everything else - a vanished file, a directory where a file was
+    /// expected, a broken symlink - is reported as what it is. Telling a user to
+    /// open System Settings when the real fault is a dangling path is worse than
+    /// no message at all.
+    static func status(for error: NSError, path: String) -> CapabilityStatus {
+        let denied = error.domain == NSCocoaErrorDomain && [
+            NSFileReadNoPermissionError, NSFileWriteNoPermissionError
+        ].contains(error.code)
+
+        if denied {
+            return .permissionRequired(
+                "macOS denied reading \(path) (NSFileReadNoPermissionError). Full Disk Access (System Settings → Privacy & Security → Full Disk Access) is the usual fix.")
         }
-        return .available("Available")
+        if error.domain == NSCocoaErrorDomain && error.code == NSFileNoSuchFileError {
+            return .unavailable("Not present on this Mac (\(path))")
+        }
+        return .unavailable("Cannot read \(path): \(error.localizedDescription)")
     }
 
     public func collect(interval: DateInterval, limit: Int) async -> CollectResult {

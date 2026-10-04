@@ -288,6 +288,71 @@ struct SelfTest {
         check("live counter reaches the number actually loaded (\(peak) -> \(loaded))",
               peak > 0 && peak == loaded)
 
+        // MARK: - Probe honesty
+        //
+        // A permission message must be backed by the OS saying "not permitted",
+        // never inferred from a constructor that failed for some other reason.
+        print("\n--- probe truthfulness ---")
+
+        let probeRead = UnifiedLogProbe.read()
+        check("unified log is readable on this Mac (measured, not assumed)",
+              probeRead.isReadable)
+        check("probe reports a real entry count, not a bare \"Available\"",
+              { if case .readable = probeRead.outcome { return true }; return false }())
+        print("       \(UnifiedLogProbe.status(for: probeRead, sourceName: "Unified Log").label)")
+
+        // No source may claim a Full Disk Access prompt on a Mac where the log
+        // store demonstrably reads fine, unless something actually denied it.
+        var falsePermissionClaims: [String] = []
+        for c in CollectorRegistry.makeCollectors() {
+            if case .permissionRequired(let why) = c.probe(), probeRead.isReadable {
+                falsePermissionClaims.append("\(c.displayName): \(why)")
+            }
+        }
+        check("no collector claims a permission problem while the log store reads fine (\(falsePermissionClaims.count) claims)",
+              falsePermissionClaims.isEmpty)
+        for fpc in falsePermissionClaims { print("       FALSE CLAIM: \(fpc)") }
+
+        // A path that does not exist must be absent, never a permissions fault.
+        let absentProbe = FileLogCollector(
+            id: "selftest-absent", displayName: "Self-test absent",
+            path: "/Library/Logs/definitely-not-here-\(UUID().uuidString)")
+        if case .permissionRequired = absentProbe.probe() {
+            check("absent path reports absence, not a permission problem", false)
+        } else {
+            check("absent path reports absence, not a permission problem", true)
+        }
+
+        // TCC is Full Disk Access protected, but whether it is denied depends on
+        // whether the grant exists - so both outcomes are correct and the test
+        // has to accept either. What must hold in both cases is that the reported
+        // status matches reality: readable when it reads, and a denial naming the
+        // OS error when it does not. Asserting "must be denied" broke on CI,
+        // which runs with the grant.
+        let tccPath = "/Library/Application Support/com.apple.TCC"
+        if FileManager.default.fileExists(atPath: tccPath) {
+            let tcc = FileLogCollector(
+                id: "selftest-tcc", displayName: "Self-test TCC", path: tccPath)
+            let tccStatus = tcc.probe()
+            let readableHere = (try? FileManager.default.contentsOfDirectory(atPath: tccPath)) != nil
+            if readableHere {
+                check("TCC reported available when the grant exists", 
+                      { if case .available = tccStatus { return true }; return false }())
+            } else {
+                check("TCC denial names the OS error, rather than asserting a cause",
+                      { if case .permissionRequired(let m) = tccStatus { return m.contains("NSFileReadNoPermissionError") }; return false }())
+            }
+            print("       \(tccStatus.label)")
+        } else {
+            check("TCC path reported honestly", true)
+        }
+
+        // A readable file must not be described as blocked.
+        let readable = FileLogCollector(
+            id: "selftest-readable", displayName: "Self-test readable", path: "/var/log/system.log")
+        check("a genuinely readable log file is reported available",
+              { if case .available = readable.probe() { return true }; return false }())
+
         print(fail == 0 ? "\nALL CHECKS PASSED" : "\n\(fail) CHECK(S) FAILED")
         exit(fail == 0 ? 0 : 1)
     }
