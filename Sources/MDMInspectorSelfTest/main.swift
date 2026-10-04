@@ -323,18 +323,28 @@ struct SelfTest {
             check("absent path reports absence, not a permission problem", true)
         }
 
-        // TCC is genuinely Full Disk Access protected, so it must be denied
-        // without the grant. This is the one path where a denial is truthful.
-        let tcc = FileLogCollector(
-            id: "selftest-tcc", displayName: "Self-test TCC",
-            path: "/Library/Application Support/com.apple.TCC")
-        if FileManager.default.fileExists(atPath: "/Library/Application Support/com.apple.TCC") {
+        // TCC is Full Disk Access protected, but whether it is denied depends on
+        // whether the grant exists - so both outcomes are correct and the test
+        // has to accept either. What must hold in both cases is that the reported
+        // status matches reality: readable when it reads, and a denial naming the
+        // OS error when it does not. Asserting "must be denied" broke on CI,
+        // which runs with the grant.
+        let tccPath = "/Library/Application Support/com.apple.TCC"
+        if FileManager.default.fileExists(atPath: tccPath) {
+            let tcc = FileLogCollector(
+                id: "selftest-tcc", displayName: "Self-test TCC", path: tccPath)
             let tccStatus = tcc.probe()
-            check("TCC path denial is reported as a denial, with the OS error named",
-                  { if case .permissionRequired(let m) = tccStatus { return m.contains("NSFileReadNoPermissionError") }; return false }())
+            let readableHere = (try? FileManager.default.contentsOfDirectory(atPath: tccPath)) != nil
+            if readableHere {
+                check("TCC reported available when the grant exists", 
+                      { if case .available = tccStatus { return true }; return false }())
+            } else {
+                check("TCC denial names the OS error, rather than asserting a cause",
+                      { if case .permissionRequired(let m) = tccStatus { return m.contains("NSFileReadNoPermissionError") }; return false }())
+            }
             print("       \(tccStatus.label)")
         } else {
-            check("TCC path denial reported honestly", true)
+            check("TCC path reported honestly", true)
         }
 
         // A readable file must not be described as blocked.
