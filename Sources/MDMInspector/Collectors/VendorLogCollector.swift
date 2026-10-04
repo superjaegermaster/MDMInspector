@@ -45,13 +45,9 @@ final class VendorLogCollector: LogCollector {
         processNames.map { NSPredicate(format: "process == %@", $0) }
 
     func probe() -> CapabilityStatus {
-        do {
-            _ = try OSLogStore(scope: .system)
-            return .available("Available")
-        } catch {
-            return .permissionRequired(
-                "Permission required — grant Full Disk Access to read \(displayName) records from the unified log")
-        }
+        // Shared with the generic unified-log collector so every source reports
+        // the same measured truth rather than each guessing from a constructor.
+        UnifiedLogProbe.status(for: UnifiedLogProbe.readCached(), sourceName: displayName)
     }
 
     func collect(interval: DateInterval, limit: Int) async -> CollectResult {
