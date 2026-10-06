@@ -1,11 +1,19 @@
 import SwiftUI
 import AppKit
 
-/// Capabilities / Permissions center (§27, §28). Status per source, with the
-/// concrete System Settings path when a permission is missing. MDM Inspector
-/// cannot grant PPPC permissions itself and does not try to.
+/// Capabilities / Permissions center. Apple-provided sources are grouped by
+/// the thing they describe; vendor sources are grouped by the product that
+/// owns them. This makes "what is blocked?" answerable without scanning a
+/// 55-row flat list.
 public struct CapabilitiesView: View {
     @EnvironmentObject public var model: InspectorModel
+
+    private struct CapabilityGroup: Identifiable {
+        let title: String
+        let subtitle: String
+        let collectors: [any LogCollector]
+        var id: String { title }
+    }
 
     public var body: some View {
         ScrollView {
@@ -25,42 +33,163 @@ public struct CapabilitiesView: View {
         }
     }
 
+    private var capabilityGroups: [CapabilityGroup] {
+        let grouped = Dictionary(grouping: model.collectors) { group(for: $0.id) }
+        let order = [
+            "Built-in macOS · System and diagnostics",
+            "Built-in macOS · MDM and profiles",
+            "Built-in macOS · Install and network",
+            "Workspace ONE UEM",
+            "Microsoft Intune",
+            "Jamf Pro",
+            "Platform SSO and identity",
+            "Kandji",
+            "ManageEngine",
+            "N-able",
+            "Microsoft Defender for Endpoint",
+            "Other installed software"
+        ]
+        return order.compactMap { title in
+            guard let sources = grouped[title], !sources.isEmpty else { return nil }
+            return CapabilityGroup(title: title, subtitle: subtitle(for: title), collectors: sources)
+        }
+    }
+
+    private func group(for id: String) -> String {
+        switch id {
+        // Apple platform sources: group by troubleshooting topic, not by an
+        // invented vendor. These are part of macOS itself.
+        case "unified", "processes", "diagnostics-reports":
+            return "Built-in macOS · System and diagnostics"
+        case "macos-mdm-unified", "macos-managedclient-log":
+            return "Built-in macOS · MDM and profiles"
+        case "install-log", "install-log-0", "system-log", "appfirewall", "wifi-log", "daily-out", "asl":
+            return "Built-in macOS · Install and network"
+
+        // Everything below is owned by a named product/MDM, so its files and
+        // unified-log view stay together even when the component is called Hub,
+        // Company Portal, an agent, or an extension.
+        case let x where x.hasPrefix("ws1-"):
+            return "Workspace ONE UEM"
+        case let x where x.hasPrefix("intune-") || x.hasPrefix("ms-"):
+            return "Microsoft Intune"
+        case let x where x.hasPrefix("jamf-"):
+            return "Jamf Pro"
+        case let x where x.hasPrefix("platformsso-"):
+            return "Platform SSO and identity"
+        case let x where x.hasPrefix("kandji-"):
+            return "Kandji"
+        case let x where x.hasPrefix("manageengine-"):
+            return "ManageEngine"
+        case let x where x.hasPrefix("nable-"):
+            return "N-able"
+        case "mde-logs":
+            return "Microsoft Defender for Endpoint"
+        default:
+            return "Other installed software"
+        }
+    }
+
+    private func subtitle(for title: String) -> String {
+        switch title {
+        case "Built-in macOS · System and diagnostics":
+            return "Apple Unified Log, process inventory and crash reports"
+        case "Built-in macOS · MDM and profiles":
+            return "Apple profile, MDM command and software-update evidence"
+        case "Built-in macOS · Install and network":
+            return "Installer, firewall, Wi-Fi and legacy system logs"
+        case "Workspace ONE UEM":
+            return "Intelligent Hub, AirWatch/Munki and Workspace ONE components"
+        case "Microsoft Intune":
+            return "Intune agents, Company Portal and Microsoft support logs"
+        case "Jamf Pro":
+            return "Jamf client, installation, setup and Self Service logs"
+        case "Platform SSO and identity":
+            return "Apple, Microsoft, Okta and Kerberos SSO components"
+        default:
+            return "Registered local sources"
+        }
+    }
+
     private var sourcesList: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 10) {
             HStack {
                 Text("Sources").font(.system(size: 14, weight: .semibold))
                 Spacer()
                 Button("Re-check") { model.refreshCapabilities() }
             }
-            VStack(spacing: 0) {
-                ForEach(model.collectors, id: \.id) { c in
-                    let status = model.capabilities[c.id] ?? .unavailable("Unknown")
-                    HStack(alignment: .top, spacing: 9) {
-                        statusIcon(status)
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(c.displayName).font(.system(size: 12, weight: .medium))
-                            Text(c.detail)
-                                .font(.system(size: 10, design: .monospaced))
-                                .foregroundStyle(.secondary)
-                                .lineLimit(2)
+
+            VStack(alignment: .leading, spacing: 12) {
+                ForEach(capabilityGroups) { group in
+                    DisclosureGroup {
+                        VStack(spacing: 0) {
+                            ForEach(group.collectors, id: \.id) { c in
+                                sourceRow(c)
+                                if c.id != group.collectors.last?.id { Divider() }
+                            }
                         }
-                        Spacer(minLength: 12)
-                        Text(status.label)
-                            .font(.system(size: 11))
-                            .foregroundStyle(statusColor(status))
-                            .multilineTextAlignment(.trailing)
-                            .frame(width: 300, alignment: .trailing)
+                        .padding(.top, 6)
+                    } label: {
+                        HStack(alignment: .firstTextBaseline, spacing: 8) {
+                            Image(systemName: groupIcon(group.title))
+                                .foregroundStyle(groupColour(group.title))
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(group.title).font(.system(size: 13, weight: .semibold))
+                                Text(group.subtitle)
+                                    .font(.system(size: 10))
+                                    .foregroundStyle(.secondary)
+                            }
+                            Spacer()
+                            Text("\(group.collectors.count)")
+                                .font(.system(size: 11, design: .monospaced))
+                                .foregroundStyle(.secondary)
+                        }
                     }
                     .padding(.horizontal, 12)
-                    .padding(.vertical, 8)
-                    Divider()
+                    .padding(.vertical, 9)
+                    .background(Color(nsColor: .controlBackgroundColor), in: RoundedRectangle(cornerRadius: 8))
+                    .overlay(RoundedRectangle(cornerRadius: 8).stroke(.separator))
                 }
             }
-            .background(Color(nsColor: .controlBackgroundColor))
-            .clipShape(RoundedRectangle(cornerRadius: 8))
-            .overlay(RoundedRectangle(cornerRadius: 8).stroke(.separator))
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private func sourceRow(_ c: any LogCollector) -> some View {
+        let status = model.capabilities[c.id] ?? .unavailable("Unknown")
+        return HStack(alignment: .top, spacing: 9) {
+            statusIcon(status)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(c.displayName).font(.system(size: 12, weight: .medium))
+                Text(c.detail)
+                    .font(.system(size: 10, design: .monospaced))
+                    .foregroundStyle(.secondary)
+                    .lineLimit(2)
+            }
+            Spacer(minLength: 12)
+            Text(status.label)
+                .font(.system(size: 11))
+                .foregroundStyle(statusColor(status))
+                .multilineTextAlignment(.trailing)
+                .frame(width: 300, alignment: .trailing)
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
+    }
+
+    private func groupIcon(_ title: String) -> String {
+        if title.hasPrefix("Built-in") { return "apple.logo" }
+        if title == "Platform SSO and identity" { return "person.badge.key" }
+        if title == "Workspace ONE UEM" || title == "Microsoft Intune" || title == "Jamf Pro" { return "building.2" }
+        return "shippingbox"
+    }
+
+    private func groupColour(_ title: String) -> Color {
+        if title.hasPrefix("Built-in") { return .blue }
+        if title == "Workspace ONE UEM" { return .purple }
+        if title == "Microsoft Intune" { return .blue }
+        if title == "Jamf Pro" { return .green }
+        return .secondary
     }
 
     private var remediation: some View {
