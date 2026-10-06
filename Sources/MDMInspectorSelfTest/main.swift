@@ -205,8 +205,7 @@ struct SelfTest {
                       "ws1-unified", "ws1-data-logs", "ws1-managedsoftwareupdate",
                       "ws1-installinfo", "ws1-installreport", "ws1-appstatuses", "ws1-workflow",
                       "ws1-managed-installs", "kandji-unified", "kandji-logs",
-                      "manageengine-logs", "nable-agent-logs", "mde-logs",
-                      "horizon-agent-logs"]
+                      "manageengine-logs", "nable-agent-logs", "mde-logs"]
         for iid in mdmIDs {
             check("MDM source \(iid) is registered",
                   collectors.contains { $0.id == iid })

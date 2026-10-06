@@ -91,7 +91,7 @@ Xcode dependency.
 
 ## Status
 
-Working: the three views, 51 sources covering macOS MDM internals, Workspace ONE,
+Working: the three views, 55 sources covering macOS MDM internals, Workspace ONE,
 Intune, Jamf, Platform SSO and other MDM vendors, plus the permissions centre.
 Not built, on purpose: correlation, loop detection, root-cause claims. See
 [Known limits](#known-limits).
@@ -114,8 +114,7 @@ Not built, on purpose: correlation, loop detection, root-cause claims. See
 | ManageEngine | `/Library/UEMS_Agent/logs` |
 | N-able | `/Library/Logs/N-central Agent`, `/var/log/N-able/N-agent` |
 | Microsoft Defender for Endpoint | `/Library/Logs/Microsoft/mdatp` |
-| Omnissa Horizon | `/var/log/omnissa`, `~/Library/Logs/Omnissa` |
-| Others | MSI, Adobe, Zscaler, SCCM, Cisco, OneDrive, Microsoft AutoUpdate |
+| Others | MSI, Adobe, Zscaler, Cisco, OneDrive, Microsoft AutoUpdate |
 
 Paths come from each vendor's documentation. Workspace ONE's macOS source list in
 [Omnissa's Device-Side Logging guide](https://docs.omnissa.com/TroubleshootingandLoggingGuide-VSaaS/WorkspaceONEUEMDevice-SideLogging)
