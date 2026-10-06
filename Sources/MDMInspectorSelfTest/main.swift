@@ -202,6 +202,8 @@ struct SelfTest {
         // macOS MDM / platform coverage. Subsystem names come from Apple's
         // profile-logging docs, not from guesswork.
         let mdmIDs = ["macos-mdm-unified", "macos-managedclient-log",
+                      "ws1-unified", "ws1-data-logs", "ws1-managedsoftwareupdate",
+                      "ws1-installinfo", "ws1-installreport", "ws1-appstatuses", "ws1-workflow",
                       "ws1-managed-installs", "kandji-unified", "kandji-logs",
                       "manageengine-logs", "nable-agent-logs", "mde-logs",
                       "horizon-agent-logs"]
@@ -227,7 +229,12 @@ struct SelfTest {
         let registry = collectors.map(\.detail).joined(separator: " ")
         let documentedPaths = ["/Library/Logs/ManagedClient/ManagedClient.log",
                                "/Library/Logs/Microsoft/mdatp",
-                               "/Library/UEMS_Agent/logs",
+                               "/Library/Application Support/AirWatch/Data/Logs",
+                               "/Library/Application Support/AirWatch/Data/Munki/managed installs/logs/ManagedSoftwareUpdate.log",
+                               "/Library/Application Support/AirWatch/Data/Munki/Managed Installs/InstallInfo.plist",
+                               "/Library/Application Support/AirWatch/Data/Munki/Managed Installs/ManagedInstallReport.plist",
+                               "/Library/Application Support/AirWatch/Data/AppStatuses_WS1.plist",
+                               "/Library/Logs/Workflow",
                                "io.kandji"]
         for known in documentedPaths {
             check("documented path/subsystem present: \(known)", registry.contains(known))
@@ -347,11 +354,18 @@ struct SelfTest {
             check("TCC path reported honestly", true)
         }
 
-        // A readable file must not be described as blocked.
+        // A readable file must not be described as blocked. Some macOS builds
+        // no longer ship system.log, so absence is also a correct result.
+        let readablePath = "/var/log/system.log"
         let readable = FileLogCollector(
-            id: "selftest-readable", displayName: "Self-test readable", path: "/var/log/system.log")
-        check("a genuinely readable log file is reported available",
-              { if case .available = readable.probe() { return true }; return false }())
+            id: "selftest-readable", displayName: "Self-test readable", path: readablePath)
+        var readableIsCorrect = false
+        if FileManager.default.fileExists(atPath: readablePath) {
+            if case .available = readable.probe() { readableIsCorrect = true }
+        } else if case .unavailable = readable.probe() {
+            readableIsCorrect = true
+        }
+        check("a readable or absent log file is classified honestly", readableIsCorrect)
 
         print(fail == 0 ? "\nALL CHECKS PASSED" : "\n\(fail) CHECK(S) FAILED")
         exit(fail == 0 ? 0 : 1)
