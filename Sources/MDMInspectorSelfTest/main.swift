@@ -98,7 +98,7 @@ struct SelfTest {
         check("IntuneMDMAgent classifies as Intune", SourceCategory.classify(process: "IntuneMDMAgent") == .intune)
         check("IntuneMMA classifies as Intune", SourceCategory.classify(process: "IntuneMMA") == .intune)
         check("Company Portal classifies as Intune", SourceCategory.classify(process: "Company Portal") == .intune)
-        check("awagent classifies as Intelligent Hub", SourceCategory.classify(process: "awagent") == .intelligentHub)
+        check("awagent classifies as Workspace ONE", SourceCategory.classify(process: "awagent") == .workspaceOne)
         check("unknown process stays visible as .other", SourceCategory.classify(process: "zzz-unknown-thing") == .other)
         check("installer classifies as Apps", SourceCategory.classify(process: "installd") == .apps)
 
