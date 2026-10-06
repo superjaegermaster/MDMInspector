@@ -98,7 +98,7 @@ public enum CollectorRegistry {
             detail: "Hub and macOS management activity from hubd, awagent, mdmclient and AirWatch subsystems",
             subsystemPrefixes: ["com.air-watch", "com.airwatch", "com.vmware.airwatch", "com.omnissa"],
             processNames: ["hubd", "awagent", "AWProcessCommands", "mdmclient", "awcmclient", "ws1HubUtil"],
-            source: .intelligentHub
+            source: .workspaceOne
         ))
         // --- Platform SSO -------------------------------------------------
         // macOS Platform SSO is the Apple extensible-SSO framework brokered by

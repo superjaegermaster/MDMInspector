@@ -55,7 +55,6 @@ public enum SourceCategory: String, CaseIterable, Identifiable, Hashable {
     case macOS
     case mdm
     case workspaceOne
-    case intelligentHub
     case apps
     case network
     case security
@@ -73,7 +72,6 @@ public enum SourceCategory: String, CaseIterable, Identifiable, Hashable {
         case .macOS: return "macOS"
         case .mdm: return "MDM"
         case .workspaceOne: return "Workspace ONE"
-        case .intelligentHub: return "Intelligent Hub"
         case .apps: return "Apps"
         case .network: return "Network"
         case .security: return "Security"
@@ -94,7 +92,6 @@ public enum SourceCategory: String, CaseIterable, Identifiable, Hashable {
         case .macOS: return Color(red: 0.25, green: 0.55, blue: 0.90)
         case .mdm: return Color(red: 0.30, green: 0.70, blue: 0.75)
         case .workspaceOne: return Color(red: 0.55, green: 0.35, blue: 0.80)
-        case .intelligentHub: return Color(red: 0.30, green: 0.72, blue: 0.45)
         case .apps: return Color(red: 0.35, green: 0.65, blue: 0.80)
         case .network: return Color(red: 0.85, green: 0.60, blue: 0.25)
         case .security: return Color(red: 0.80, green: 0.35, blue: 0.35)
@@ -161,8 +158,9 @@ public enum SourceCategory: String, CaseIterable, Identifiable, Hashable {
 
         // --- Enterprise agents -------------------------------------------
         if has("awagent") || has("workspaceone") || has("airwatch") || has("vmware")
+            || has("hubd") || has("awcmclient") || has("awprocesscommands")
             || has("sentinel") || has("oneagent") || has("ws1") {
-            add(.intelligentHub)
+            add(.workspaceOne)
         }
         if has("mdmclient") || has("profiles") || has("mdm") || has("mobileasset")
             || has("identityservices") || has("authenticatorservices") {

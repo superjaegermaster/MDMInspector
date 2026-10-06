@@ -283,7 +283,7 @@ public final class FileLogCollector: LogCollector {
     private func source() -> SourceCategory {
         let p = path.lowercased()
         if p.contains("airwatch") || p.contains("workspace") || p.contains("vmware") {
-            return .intelligentHub
+            return .workspaceOne
         }
         // Platform SSO evidence first: the Microsoft SSO extension lives inside
         // a Company Portal container, so a path-only rule would file genuine SSO
