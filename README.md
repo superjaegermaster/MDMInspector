@@ -7,12 +7,13 @@ looks wedged. The answer is on the Mac, but it's scattered:
 
 ```
 /var/log/install.log                       macOS installer
-Unified log  (log show --predicate …)      one subsystem at a time
-/var/log/jamf.log                          Jamf client
+Unified log (hubd, mdmclient, AirWatch)      Hub + macOS management events
+/var/log/jamf.log                            Jamf client
 /Library/Logs/Microsoft/Intune             Intune agent
 ~/Library/Logs/CompanyPortal.log           Company Portal
-/var/log/VMwareAirWatchAgent.log           Workspace ONE Intelligent Hub
-/Library/Logs/DiagnosticReports            crashes
+/Library/Application Support/AirWatch/Data/Munki/managed installs/logs/
+                                             Workspace ONE ManagedSoftwareUpdate.log
+/Library/Logs/DiagnosticReports            Hub/hubd crash reports
 …plus Console.app, filtered by hand, every time
 ```
 
@@ -108,7 +109,7 @@ Not built, on purpose: correlation, loop detection, root-cause claims. See
 | **Jamf Pro** | `/var/log/jamf.log`, `jamfinstall.log`, `jamf_setup.log`, `JAMFChangeManagement.log`, `/usr/local/jamf/bin` |
 | Jamf (unified log) | `com.jamf*`, processes `jamf` / `JamfDaemon` / `JamfAgent` |
 | **Platform SSO** | `com.apple.AppSSO`, `com.apple.extensiblesso`, `com.apple.heimdal`, plus the vendor extension (Microsoft, Okta); `SSOExtension`, `AppSSOAgent`, `KerberosExtension`, `swcd` |
-| Workspace ONE | `VMwareAirWatchAgent.log`, Hub and agent logs, Munki managed installs |
+| Workspace ONE / Intelligent Hub | unified `hubd`, `awagent`, `mdmclient`, AirWatch/Omnissa subsystems; `/Library/Logs/DiagnosticReports` for `Intelligent Hub*.crash` and `hubd*.crash`; `/Library/Application Support/AirWatch/Data/Munki/managed installs/logs/ManagedSoftwareUpdate.log`; `InstallInfo.plist`, `ManagedInstallReport.plist`, and `AppStatuses_WS1.plist` |
 | Kandji | unified `io.kandji*`; `/Library/Logs/Kandji` |
 | ManageEngine | `/Library/UEMS_Agent/logs` |
 | N-able | `/Library/Logs/N-central Agent`, `/var/log/N-able/N-agent` |
@@ -116,9 +117,14 @@ Not built, on purpose: correlation, loop detection, root-cause claims. See
 | Omnissa Horizon | `/var/log/omnissa`, `~/Library/Logs/Omnissa` |
 | Others | MSI, Adobe, Zscaler, SCCM, Cisco, OneDrive, Microsoft AutoUpdate |
 
-Paths come from each vendor's documentation. The obvious guess is often wrong —
+Paths come from each vendor's documentation. Workspace ONE's macOS source list in
+[Omnissa's Device-Side Logging guide](https://docs.omnissa.com/TroubleshootingandLoggingGuide-VSaaS/WorkspaceONEUEMDevice-SideLogging)
+identifies `ManagedSoftwareUpdate.log`, the Managed Installs status plists,
+`AppStatuses_WS1.plist`, and Hub crash reports. The `/var/log/ws1-hub/` paths
+shown elsewhere in that document are under its Linux section, so MDM Inspector
+does not register them for macOS. The obvious guess is often wrong —
 `/Library/Logs/JAMF` doesn't exist; the client log is `/var/log/jamf.log`. A
-self-test pins that so it can't regress.
+self-test pins these distinctions so they can't regress.
 
 Adding a source is one entry in `Collectors/CollectorRegistry.swift`. It then
 shows up in the sidebar, the filters and the Capabilities tab with no other

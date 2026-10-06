@@ -17,11 +17,20 @@ public enum CollectorRegistry {
             ("asl", "Apple System Log", "/var/log/asl"),
             ("diagnostics-reports", "Crash & Diagnostic Reports", "/Library/Logs/DiagnosticReports"),
             // Workspace ONE / Intelligent Hub — local evidence only
-            ("ws1-agent", "Intelligent Hub (agent log)", "/var/log/VMwareAirWatchAgent.log"),
-            ("ws1-agent-alt", "Intelligent Hub (alt path)", "/Library/Logs/VMwareAirWatchAgent/agent.log"),
-            ("ws1-agent-log-dir", "Intelligent Hub (log dir)", "/Library/Logs/VMwareAirWatchAgent"),
-            ("ws1-services", "Hub Services", "/Library/Logs/AirWatch"),
-            ("ws1-support", "Intelligent Hub (support)", "/Library/Application Support/AirWatchAgent"),
+            // The current Omnissa macOS page lists Managed Installs as the
+            // local Hub/Munki evidence surface. Linux's /var/log/ws1-hub path
+            // is deliberately not registered for a Mac build.
+            ("ws1-data-logs", "Intelligent Hub Data Logs", "/Library/Application Support/AirWatch/Data/Logs"),
+            ("ws1-managedsoftwareupdate", "ManagedSoftwareUpdate.log", "/Library/Application Support/AirWatch/Data/Munki/managed installs/logs/ManagedSoftwareUpdate.log"),
+            ("ws1-installinfo", "WS1 InstallInfo", "/Library/Application Support/AirWatch/Data/Munki/Managed Installs/InstallInfo.plist"),
+            ("ws1-installreport", "WS1 Managed Install Report", "/Library/Application Support/AirWatch/Data/Munki/Managed Installs/ManagedInstallReport.plist"),
+            ("ws1-appstatuses", "WS1 App Statuses", "/Library/Application Support/AirWatch/Data/AppStatuses_WS1.plist"),
+            ("ws1-agent", "Intelligent Hub (legacy agent log)", "/var/log/VMwareAirWatchAgent.log"),
+            ("ws1-agent-alt", "Intelligent Hub (legacy path)", "/Library/Logs/VMwareAirWatchAgent/agent.log"),
+            ("ws1-agent-log-dir", "Intelligent Hub (legacy log dir)", "/Library/Logs/VMwareAirWatchAgent"),
+            ("ws1-services", "Hub Services (legacy path)", "/Library/Logs/AirWatch"),
+            ("ws1-support", "Intelligent Hub (legacy support path)", "/Library/Application Support/AirWatchAgent"),
+            ("ws1-workflow", "Workspace ONE Workflows", "/Library/Logs/Workflow"),
             // Microsoft Intune — Management Extension (IME).
             // System-level agent logs, the paths Microsoft itself documents for
             // the Intune log-collection remote action.
@@ -83,6 +92,14 @@ public enum CollectorRegistry {
             processNames: ["IntuneMDMDaemon", "IntuneMDMAgent", "IntuneMMA",
                           "IntuneMdmAgent", "IntuneMdmDaemon", "Company Portal", "CompanyPortal"],
             source: .intune
+        ))
+        collectors.append(VendorLogCollector(
+            id: "ws1-unified",
+            displayName: "Workspace ONE Intelligent Hub (Unified Log)",
+            detail: "Hub and macOS management activity from hubd, awagent, mdmclient and AirWatch subsystems",
+            subsystemPrefixes: ["com.air-watch", "com.airwatch", "com.vmware.airwatch", "com.omnissa"],
+            processNames: ["hubd", "awagent", "AWProcessCommands", "mdmclient", "awcmclient", "ws1HubUtil"],
+            source: .intelligentHub
         ))
         // --- Platform SSO -------------------------------------------------
         // macOS Platform SSO is the Apple extensible-SSO framework brokered by
