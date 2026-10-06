@@ -138,7 +138,7 @@ struct SelfTest {
         let hasRecentRecords = await unifiedLogHasRecordsNewerThan(seconds: 300)
         if hasRecentRecords {
             check("the newest kept event is actually recent (< 5 min old)",
-                  br.events.first.map { Date().timeIntervalSince($0.timestamp) < 300 } ?? false)
+                  br.events.map(\.timestamp).max().map { Date().timeIntervalSince($0) < 300 } ?? false)
         } else {
             print("SKIP  newest-event recency: this machine has no unified records in the last 5 min")
         }
