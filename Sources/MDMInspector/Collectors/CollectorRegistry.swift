@@ -62,7 +62,6 @@ public enum CollectorRegistry {
             ("jamf-bin-dir", "Jamf Binary Logs", "/usr/local/jamf/bin"),
             ("jamf-selfservice", "Jamf Self Service", "/var/log/selfservice"),
             ("zscaler", "Zscaler", "/Library/Application Support/Zscaler"),
-            ("sccm", "Configuration Manager Client", "/Library/Logs/Configuration Manager"),
             ("cisco", "Cisco Software", "/Library/Logs/Cisco")
         ]
         for s in fileSources {
@@ -196,14 +195,6 @@ public enum CollectorRegistry {
             id: "nable-nagent",
             displayName: "N-able N-agent",
             path: "/var/log/N-able/N-agent"))
-        collectors.append(FileLogCollector(
-            id: "horizon-agent-logs",
-            displayName: "Omnissa Horizon Agent",
-            path: "/var/log/omnissa"))
-        collectors.append(FileLogCollector(
-            id: "horizon-client-logs",
-            displayName: "Omnissa Horizon Client",
-            path: NSString(string: "~/Library/Logs/Omnissa").expandingTildeInPath))
         // Microsoft Defender for Endpoint on macOS: mdatp logs, including
         // install.log and microsoft-defender_core.log.
         collectors.append(FileLogCollector(
