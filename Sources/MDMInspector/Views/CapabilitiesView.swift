@@ -39,9 +39,7 @@ public struct CapabilitiesView: View {
             "Built-in macOS · System and diagnostics",
             "Built-in macOS · MDM and profiles",
             "Built-in macOS · Install and network",
-            "Workspace ONE UEM",
-            "Microsoft Intune",
-            "Jamf Pro",
+            "MDM",
             "Platform SSO and identity",
             "Kandji",
             "ManageEngine",
@@ -69,12 +67,8 @@ public struct CapabilitiesView: View {
         // Everything below is owned by a named product/MDM, so its files and
         // unified-log view stay together even when the component is called Hub,
         // Company Portal, an agent, or an extension.
-        case let x where x.hasPrefix("ws1-"):
-            return "Workspace ONE UEM"
-        case let x where x.hasPrefix("intune-") || x.hasPrefix("ms-"):
-            return "Microsoft Intune"
-        case let x where x.hasPrefix("jamf-"):
-            return "Jamf Pro"
+        case let x where x.hasPrefix("ws1-") || x.hasPrefix("intune-") || x.hasPrefix("ms-") || x.hasPrefix("jamf-"):
+            return "MDM"
         case let x where x.hasPrefix("platformsso-"):
             return "Platform SSO and identity"
         case let x where x.hasPrefix("kandji-"):
@@ -98,12 +92,8 @@ public struct CapabilitiesView: View {
             return "Apple profile, MDM command and software-update evidence"
         case "Built-in macOS · Install and network":
             return "Installer, firewall, Wi-Fi and legacy system logs"
-        case "Workspace ONE UEM":
-            return "Intelligent Hub, AirWatch/Munki and Workspace ONE components"
-        case "Microsoft Intune":
-            return "Intune agents, Company Portal and Microsoft support logs"
-        case "Jamf Pro":
-            return "Jamf client, installation, setup and Self Service logs"
+        case "MDM":
+            return "Workspace ONE, Jamf Pro, Microsoft Intune and Apple MDM components"
         case "Platform SSO and identity":
             return "Apple, Microsoft, Okta and Kerberos SSO components"
         default:
@@ -180,15 +170,13 @@ public struct CapabilitiesView: View {
     private func groupIcon(_ title: String) -> String {
         if title.hasPrefix("Built-in") { return "apple.logo" }
         if title == "Platform SSO and identity" { return "person.badge.key" }
-        if title == "Workspace ONE UEM" || title == "Microsoft Intune" || title == "Jamf Pro" { return "building.2" }
+        if title == "MDM" { return "building.2" }
         return "shippingbox"
     }
 
     private func groupColour(_ title: String) -> Color {
         if title.hasPrefix("Built-in") { return .blue }
-        if title == "Workspace ONE UEM" { return .purple }
-        if title == "Microsoft Intune" { return .blue }
-        if title == "Jamf Pro" { return .green }
+        if title == "MDM" { return .teal }
         return .secondary
     }
 

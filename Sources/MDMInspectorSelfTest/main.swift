@@ -158,7 +158,7 @@ struct SelfTest {
             return (Date().timeIntervalSince(t), model.events.count, model.filteredEvents.count)
         }
         let (refreshTime, loadedCount, shownCount) = await timedRefresh()
-        print("full refresh (all \(collectors.count) sources, 30m): \(String(format: "%.1f", refreshTime))s, \(loadedCount) events loaded, \(shownCount) shown")
+        print("full refresh (all \(collectors.count) sources, 5m default): \(String(format: "%.1f", refreshTime))s, \(loadedCount) events loaded, \(shownCount) shown")
         // Budget is generous on purpose. Its job is to catch a REGRESSION (the
         // bug where a 24h read took over 7 minutes), not to certify absolute
         // speed — the time legitimately varies with log volume and hardware, and

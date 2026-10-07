@@ -83,8 +83,11 @@ public enum SourceCategory: String, CaseIterable, Identifiable, Hashable {
         }
     }
 
-    /// Sidebar order (the raw-value list includes `.all` first already).
-    public static var sidebarOrder: [SourceCategory] { allCases }
+    /// Sidebar order. Vendor MDM components are intentionally represented by
+    /// the single MDM bucket while their detailed source labels remain intact.
+    public static var sidebarOrder: [SourceCategory] {
+        [.all, .macOS, .mdm, .apps, .network, .security, .identity, .platformSSO, .other]
+    }
 
     public var color: Color {
         switch self {
@@ -296,7 +299,12 @@ public struct LogEvent: Identifiable, Hashable {
     public var source: SourceCategory { sources.first ?? .other }
 
     /// True when the event belongs to the given category (any of them).
-    public func matches(_ category: SourceCategory) -> Bool { sources.contains(category) }
+    public func matches(_ category: SourceCategory) -> Bool {
+        if category == .mdm {
+            return sources.contains { $0 == .mdm || $0 == .workspaceOne || $0 == .intune || $0 == .jamf }
+        }
+        return sources.contains(category)
+    }
 
     /// "Intune · Platform SSO" for events that span domains.
     public var sourceLabel: String {

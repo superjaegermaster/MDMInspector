@@ -8,7 +8,7 @@ import SwiftUI
 public final class InspectorModel: ObservableObject {
     // View state
     @Published var appMode: AppMode = .dashboard
-    @Published var timeRange: TimeRange = .m30
+    @Published var timeRange: TimeRange = .m5
     @Published var displayMode: DisplayMode = .detailed
     @Published var selectedSource: SourceCategory = .all
     @Published var searchText: String = ""
