@@ -1,0 +1,93 @@
+name: Build macOS release
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag to create (for example v0.1.0)"
+        required: true
+        default: "v0.1.0"
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  package:
+    name: Package Apple Silicon app
+    runs-on: macos-15
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Show toolchain and architecture
+        run: |
+          sw_vers
+          swift --version
+          uname -m
+
+      - name: Build the arm64 app
+        run: |
+          test "$(uname -m)" = arm64
+          ./build_app.sh
+          APP="build/MDM Inspector.app"
+          test -x "$APP/Contents/MacOS/MDMInspector"
+          test -f "$APP/Contents/Resources/MDMInspector.icns"
+          test "$(lipo -archs "$APP/Contents/MacOS/MDMInspector")" = arm64
+          codesign --verify --deep --strict "$APP"
+
+      - name: Package app, DMG and PKG
+        run: |
+          ./make_installer.sh
+          mkdir -p build/dist
+          ditto -c -k --sequesterRsrc --keepParent \
+            "build/MDM Inspector.app" "build/dist/MDM-Inspector-Apple-Silicon.app.zip"
+          hdiutil verify "build/dist/MDM Inspector-0.1.dmg"
+          pkgutil --check-signature "build/dist/MDM Inspector-0.1.pkg" || true
+
+      - name: Write validation instructions
+        run: |
+          cat > build/dist/INSTALL.txt <<'EOF'
+          MDM Inspector — Apple Silicon
+
+          Download MDM-Inspector-Apple-Silicon.app.zip for the simplest install.
+          Unzip it and move MDM Inspector.app to Applications.
+
+          This build is ad-hoc signed because it is not yet notarized with an
+          Apple Developer ID. On first launch, Control-click the app, choose
+          Open, then confirm Open in the macOS warning. This is a one-time
+          validation step for this downloaded copy.
+
+          The DMG provides the same app in a drag-to-Applications window.
+          The PKG installs to /Applications and may ask for administrator
+          approval. It has the same first-launch validation requirement.
+
+          This release is Apple Silicon (arm64) only.
+          EOF
+
+      - name: Upload workflow artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: MDM-Inspector-Apple-Silicon
+          path: build/dist/
+          if-no-files-found: error
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="${GITHUB_REF_NAME}"
+          if [ "$GITHUB_EVENT_NAME" = workflow_dispatch ]; then
+            TAG="${{ inputs.tag }}"
+          fi
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "Release $TAG already exists; replacing its assets"
+            gh release upload "$TAG" build/dist/* --clobber
+          else
+            gh release create "$TAG" build/dist/* \
+              --title "MDM Inspector $TAG" \
+              --notes "Pre-built Apple Silicon release. On first launch, Control-click MDM Inspector.app, choose Open, then confirm Open. See INSTALL.txt for details."
+          fi
