@@ -44,16 +44,6 @@ public struct TopBar: View {
             Spacer(minLength: 12)
 
             if model.appMode != .capabilities {
-                Picker("", selection: $model.runMode) {
-                    ForEach(RunMode.allCases) { Text($0.label).tag($0) }
-                }
-                .frame(width: 150)
-                .onChange(of: model.runMode) { _, new in
-                    Task {
-                        if new == .live { await model.startLive() } else { model.stopLive() }
-                    }
-                }
-
                 Picker("", selection: $model.timeRange) {
                     ForEach(TimeRange.allCases) { Text($0.label).tag($0) }
                 }
@@ -180,11 +170,6 @@ public struct StatusBar: View {
             }
             if let last = model.lastLoaded {
                 Text("Snapshot \(Stamp.timeWithMillis.string(from: last))")
-            }
-            if model.runMode == .live {
-                Text("● LIVE").foregroundStyle(.red).fontWeight(.semibold)
-                Text(model.shouldFollow ? "following" : "paused — scrolled up")
-                    .foregroundStyle(.secondary)
             }
             Spacer()
             if !model.diagnostics.isEmpty {

@@ -151,22 +151,13 @@ public struct DetailedTimeline: View {
     @EnvironmentObject public var model: InspectorModel
 
     public var body: some View {
-        ScrollViewReader { proxy in
-            ScrollView {
-                LazyVStack(alignment: .leading, spacing: 0) {
-                    ForEach(model.filteredEvents) { event in
-                        EventRow(event: event, compact: false)
-                            .id(event.id)
-                            .onTapGesture { model.selectedEvent = event }
-                        Divider().opacity(0.35)
-                    }
-                }
-            }
-            .onChange(of: model.filteredEvents.count) { _, _ in
-                if model.runMode == .live && model.shouldFollow {
-                    if let last = model.filteredEvents.last {
-                        withAnimation { proxy.scrollTo(last.id, anchor: .bottom) }
-                    }
+        ScrollView {
+            LazyVStack(alignment: .leading, spacing: 0) {
+                ForEach(model.filteredEvents) { event in
+                    EventRow(event: event, compact: false)
+                        .id(event.id)
+                        .onTapGesture { model.selectedEvent = event }
+                    Divider().opacity(0.35)
                 }
             }
         }

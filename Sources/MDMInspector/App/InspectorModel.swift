@@ -2,13 +2,12 @@ import Foundation
 import SwiftUI
 
 /// Central application state. Owns collectors, the loaded snapshot, filters and
-/// the live tail. No persistent store, no background collector in historical
-/// mode (§2.3) — the snapshot is only reloaded on explicit Refresh.
+/// the loaded snapshot. No persistent store and no background collector: a
+/// snapshot is only reloaded on explicit Refresh.
 @MainActor
 public final class InspectorModel: ObservableObject {
     // View state
     @Published var appMode: AppMode = .dashboard
-    @Published var runMode: RunMode = .historical
     @Published var timeRange: TimeRange = .m30
     @Published var displayMode: DisplayMode = .detailed
     @Published var selectedSource: SourceCategory = .all
@@ -16,7 +15,6 @@ public final class InspectorModel: ObservableObject {
     @Published var severityFilter: Set<Severity> = []
     @Published var selectedProcess: String?
     @Published public var selectedEvent: LogEvent?
-    @Published var shouldFollow = true
     @Published var inspectorVisible = true
 
     // Data
@@ -188,11 +186,13 @@ public final class InspectorModel: ObservableObject {
                 let within = p.fraction.map { min(1, max(0, $0)) }
                 let overall = base + share * (within ?? 0)
                 Task { @MainActor in
+                    // Collector callbacks can finish on different tasks. Do not
+                    // let an older callback overwrite a newer progress sample.
+                    guard overall >= (self.loadProgress ?? 0) else { return }
                     self.loadProgress = overall
                     self.loadStage = "\(collector.displayName) — \(p.stage)"
-                    // Live total: everything already finished plus what the
-                    // current collector has streamed so far.
-                    self.logsDiscovered = finishedRecords + p.recordsSoFar
+                    // Records discovered so far is also monotonic within a load.
+                    self.logsDiscovered = max(self.logsDiscovered, finishedRecords + p.recordsSoFar)
                 }
             }
 
@@ -233,41 +233,6 @@ public final class InspectorModel: ObservableObject {
     func changeRange(_ range: TimeRange) async {
         timeRange = range
         await refresh()
-    }
-
-    /// Live mode: re-reads the tail of the unified log at a short interval and
-    /// appends only records newer than what we already hold. Uses the same UI.
-    func startLive() async {
-        runMode = .live
-        events = []
-        shouldFollow = true
-        await refresh()
-        Task { [weak self] in
-            while let self = self, self.runMode == .live {
-                try? await Task.sleep(nanoseconds: 2_000_000_000)
-                guard self.runMode == .live else { break }
-                await self.pollLive()
-            }
-        }
-    }
-
-    func stopLive() {
-        runMode = .historical
-    }
-
-    private func pollLive() async {
-        guard let unified = collectors.first(where: { $0.id == "unified" }) else { return }
-        let from = lastLoaded ?? Date().addingTimeInterval(-60)
-        let result = await unified.collect(interval: DateInterval(start: from, end: Date()), limit: 2000)
-        let fresh = result.events.filter { e in !self.events.contains(where: { $0.id == e.id }) }
-        // De-dup by (timestamp, process, message) since OSLogStore re-reads overlap.
-        let known = Set(self.events.map { "\($0.timestamp.timeIntervalSince1970)|\($0.process)|\($0.message)" })
-        let additions = fresh.filter { !known.contains("\($0.timestamp.timeIntervalSince1970)|\($0.process)|\($0.message)") }
-        guard !additions.isEmpty else { return }
-        self.events = (self.events + additions).sorted { $0.timestamp > $1.timestamp }
-        if self.events.count > self.unifiedEventLimit {
-            self.events = Array(self.events.suffix(self.unifiedEventLimit))
-        }
     }
 
     func clearFilters() {
