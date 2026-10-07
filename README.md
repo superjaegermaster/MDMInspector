@@ -1,5 +1,7 @@
 # MDM Inspector
 
+![MDM Inspector icon](docs/assets/icon_1024.png)
+
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 Something broke on a Mac. An app didn't install, a profile didn't apply, the Hub
