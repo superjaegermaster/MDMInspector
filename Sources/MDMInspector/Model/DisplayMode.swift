@@ -20,10 +20,3 @@ public enum AppMode: String, CaseIterable, Identifiable {
     public var label: String { rawValue }
 }
 
-public enum RunMode: String, CaseIterable, Identifiable {
-    case historical = "Historical"
-    case live = "LIVE"
-
-    public var id: String { rawValue }
-    public var label: String { rawValue }
-}

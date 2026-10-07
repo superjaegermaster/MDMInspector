@@ -45,7 +45,6 @@ body:
         - Inspector / raw evidence
         - Sources (adding a new log source)
         - Capabilities / permissions
-        - LIVE mode
         - Documentation
         - Something else
     validations:

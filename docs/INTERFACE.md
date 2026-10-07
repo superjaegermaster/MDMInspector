@@ -93,12 +93,12 @@ last one isn't a permissions error and isn't reported as one.
 Also records the privacy position: no telemetry, no analytics, no network calls,
 logs read on demand and held in memory.
 
-## Historical and LIVE
+## Snapshot workflow
 
-Same timeline, same filters, same Inspector in both. Historical is a snapshot of
-the selected range, reloaded on Refresh. LIVE appends as records arrive and
-follows the bottom of the list; scroll up and it stops following, scroll back
-down and it resumes.
+The app works from explicit historical snapshots. Choose a time range, press
+Refresh, and inspect the resulting records. There is no background tail or
+continuously updating mode; a refresh is the deliberate boundary for each
+investigation.
 
 ## Time range
 
