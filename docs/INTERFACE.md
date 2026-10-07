@@ -1,7 +1,7 @@
 # The interface
 
 A walk through each screen and what it's good for. Figures are from a live run on
-macOS 26: 40 collectors, roughly 21,000 events in 30 minutes.
+macOS 26: 40 collectors, roughly 21,000 events in a five-minute snapshot.
 
 ## Launching
 
