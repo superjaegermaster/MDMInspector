@@ -89,6 +89,21 @@ swift run -c release MDMInspectorSelfTest
 macOS 14+ and the Swift 6 toolchain. Command Line Tools are enough — there's no
 Xcode dependency.
 
+## Downloading a ready-to-run app
+
+A pre-built Apple Silicon release is published on the [GitHub Releases](https://github.com/superjaegermaster/MDMInspector/releases) page. Download `MDM-Inspector-Apple-Silicon.app.zip` for the simplest install, unzip it, and move `MDM Inspector.app` to Applications. A DMG and PKG are included for users who prefer those formats.
+
+The release is built on an Apple Silicon GitHub runner and contains an arm64
+binary. It is ad-hoc signed, not notarized with an Apple Developer ID. macOS
+therefore asks for a one-time validation: Control-click `MDM Inspector.app`,
+choose **Open**, then confirm **Open**. This is the expected validation for the
+pre-built download, not a build step. The same warning applies to the DMG and
+PKG copies.
+
+A future Developer ID signing and notarization setup can remove that validation
+step. It requires an Apple Developer Program membership and a certificate; the
+source code does not need to change.
+
 ## Status
 
 Working: the three views, 55 sources covering macOS MDM internals, Workspace ONE,
