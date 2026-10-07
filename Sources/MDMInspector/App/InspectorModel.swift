@@ -186,11 +186,13 @@ public final class InspectorModel: ObservableObject {
                 let within = p.fraction.map { min(1, max(0, $0)) }
                 let overall = base + share * (within ?? 0)
                 Task { @MainActor in
+                    // Collector callbacks can finish on different tasks. Do not
+                    // let an older callback overwrite a newer progress sample.
+                    guard overall >= (self.loadProgress ?? 0) else { return }
                     self.loadProgress = overall
                     self.loadStage = "\(collector.displayName) — \(p.stage)"
-                    // Live total: everything already finished plus what the
-                    // current collector has streamed so far.
-                    self.logsDiscovered = finishedRecords + p.recordsSoFar
+                    // Records discovered so far is also monotonic within a load.
+                    self.logsDiscovered = max(self.logsDiscovered, finishedRecords + p.recordsSoFar)
                 }
             }
 
