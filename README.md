@@ -198,38 +198,6 @@ they finish, so it never stalls or goes backwards.
 Vendor unified-log sources only search the last few minutes when none of their
 processes are running, and say so.
 
-## Screenshots and tests
-
-```zsh
-python3 tools/capture_screenshots.py    # needs an unlocked screen
-```
-
-Views are opened with launch arguments (`-startView`, `-displayMode`,
-`-timeRange`) rather than clicks, so runs are repeatable. The script bails if
-the screen is locked instead of photographing the login screen.
-
-Before opening a PR:
-
-```zsh
-./build_app.sh
-swift run -c release MDMInspectorSelfTest
-```
-
-## Test checklist
-
-1. Launch: bar appears with a climbing count, then the Dashboard loads
-2. Change the range 5m → 24h; counts move, no hang at 24h
-3. Timeline: Grouped / Detailed / Raw show the same event count
-4. Select an event; Inspector shows timestamp, process, executable, subsystem,
-   category, severity, raw record
-5. `⇧⌘C` copies the raw record
-6. Search filters on message, process, path, subsystem, category
-7. Sidebar filters by source, then by discovered process
-8. LIVE appends; scrolling up stops following
-9. Capabilities lists every source with its real status
-10. If Unified Log says *Permission required*: grant Full Disk Access, quit,
-    reopen
-
 ## Known limits
 
 No custom date ranges, no automatic collapsing of repetitive events, no health
