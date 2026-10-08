@@ -93,9 +93,9 @@ Xcode dependency.
 
 ## Downloading a ready-to-run app
 
-**[Download the latest pre-built Apple Silicon app](https://github.com/superjaegermaster/MDMInspector/releases/latest/download/MDM-Inspector-Apple-Silicon.app.zip)** — unzip it, move `MDM Inspector.app` to Applications, then Control-click it and choose **Open** on first launch.
+**[Download the latest pre-built Apple Silicon app](https://github.com/superjaegermaster/MDMInspector/releases/latest/download/MDM-Inspector.app.zip)** — unzip it, move `MDM Inspector.app` to Applications, then Control-click it and choose **Open** on first launch.
 
-A pre-built Apple Silicon release is published on the [GitHub Releases](https://github.com/superjaegermaster/MDMInspector/releases) page. Download `MDM-Inspector-Apple-Silicon.app.zip` for the simplest install, unzip it, and move `MDM Inspector.app` to Applications. A DMG and PKG are included for users who prefer those formats.
+A pre-built Apple Silicon release is published on the [GitHub Releases](https://github.com/superjaegermaster/MDMInspector/releases) page. Download `MDM-Inspector.app.zip` for the simplest install, unzip it, and move `MDM Inspector.app` to Applications. A DMG and PKG are included for users who prefer those formats.
 
 The release is built on an Apple Silicon GitHub runner and contains an arm64
 binary. It is ad-hoc signed, not notarized with an Apple Developer ID. macOS
