@@ -166,7 +166,10 @@ public enum SourceCategory: String, CaseIterable, Identifiable, Hashable {
             add(.workspaceOne)
         }
         if has("mdmclient") || has("profiles") || has("mdm") || has("mobileasset")
-            || has("identityservices") || has("authenticatorservices") {
+            || has("identityservices") || has("authenticatorservices")
+            || has("jamf") || has("jamfd") || has("jamfagent") || has("selfservice")
+            || has("awagent") || has("workspaceone") || has("airwatch") || has("hubd")
+            || has("awcmclient") || has("awprocesscommands") {
             add(.mdm)
         }
         // Other MDM vendors are MDM too, so they bucket with Apple's MDM rather
@@ -241,6 +244,7 @@ public enum SourceCategory: String, CaseIterable, Identifiable, Hashable {
     public static func classify(process: String) -> SourceCategory {
         let all = classifyAll(process: process)
         if let sso = all.first(where: { $0 == .platformSSO }) { return sso }
+        if let vendor = all.first(where: { $0 == .jamf || $0 == .intune || $0 == .workspaceOne }) { return vendor }
         return all.first ?? .other
     }
 }

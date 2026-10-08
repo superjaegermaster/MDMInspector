@@ -110,32 +110,34 @@ public final class InspectorModel: ObservableObject {
         filteredEvents.filter { $0.severity >= .error }.prefix(50).map { $0 }
     }
 
-    /// Activity volume per source, descending.
+    /// Activity volume per topic, descending. All MDM products share one
+    /// Dashboard topic while their detailed source labels remain available.
     var activityBySource: [(source: SourceCategory, count: Int)] {
         var counts: [SourceCategory: Int] = [:]
-        // A cross-domain event counts toward each category it belongs to.
-        for e in filteredEvents { for c in e.sources { counts[c, default: 0] += 1 } }
+        for e in filteredEvents {
+            let topics = e.sources.contains { $0 == .mdm || $0 == .workspaceOne || $0 == .intune || $0 == .jamf }
+                ? (e.sources.filter { ![.workspaceOne, .intune, .jamf].contains($0) } + [.mdm])
+                : e.sources
+            for c in Set(topics) { counts[c, default: 0] += 1 }
+        }
         return counts.map { ($0.key, $0.value) }.sorted { $0.count > $1.count }
     }
 
-    /// Process/source-based groups (§18). Presentation only.
+    /// Topic-based groups for the grouped timeline. MDM products are one
+    /// topic: Apple MDM, Kandji, Intune, Workspace ONE, Jamf and Mosyle.
     var groups: [EventGroup] {
-        var order: [String] = []
-        var buckets: [String: [LogEvent]] = [:]
+        var order: [SourceCategory] = []
+        var buckets: [SourceCategory: [LogEvent]] = [:]
         for e in filteredEvents {
-            let key = e.process
-            if buckets[key] == nil { order.append(key) }
-            buckets[key, default: []].append(e)
+            let topic: SourceCategory = e.matches(.mdm) ? .mdm : (e.sources.first ?? .other)
+            if buckets[topic] == nil { order.append(topic) }
+            buckets[topic, default: []].append(e)
         }
-        return order.map { key in
-            let list = buckets[key] ?? []
-            let subs = Set(list.map(\.subsystem)).sorted()
-            return EventGroup(
-                id: key,
-                title: key,
-                subtitle: subs.first ?? "",
-                events: list
-            )
+        return order.map { topic in
+            let list = buckets[topic] ?? []
+            return EventGroup(id: topic.rawValue, title: topic.label,
+                              subtitle: topic == .mdm ? "Apple MDM, Kandji, Intune, Workspace ONE, Jamf and Mosyle" : "\(list.count) records",
+                              events: list)
         }
     }
 
