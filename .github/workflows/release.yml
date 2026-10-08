@@ -44,7 +44,7 @@ jobs:
           ./make_installer.sh
           mkdir -p build/dist
           ditto -c -k --sequesterRsrc --keepParent \
-            "build/MDM Inspector.app" "build/dist/MDM-Inspector-Apple-Silicon.app.zip"
+            "build/MDM Inspector.app" "build/dist/MDM-Inspector.app.zip"
           hdiutil verify "build/dist/MDM Inspector-0.1.dmg"
           pkgutil --check-signature "build/dist/MDM Inspector-0.1.pkg" || true
 
@@ -53,7 +53,7 @@ jobs:
           cat > build/dist/INSTALL.txt <<'EOF'
           MDM Inspector — Apple Silicon
 
-          Download MDM-Inspector-Apple-Silicon.app.zip for the simplest install.
+          Download MDM-Inspector.app.zip for the simplest install.
           Unzip it and move MDM Inspector.app to Applications.
 
           This build is ad-hoc signed because it is not yet notarized with an
