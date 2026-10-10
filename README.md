@@ -77,9 +77,18 @@ What each source can actually read on this Mac.
 ## Build and run
 
 ```zsh
-./build_app.sh            # release build → build/MDM Inspector.app
+./build_app.sh                         # release build, version 0.1, build 1
+./build_app.sh --version 0.1 --build 2 # explicit build metadata
 ./build_app.sh --debug
 open "build/MDM Inspector.app"
+```
+
+`CFBundleShortVersionString` is the user-facing version. `CFBundleVersion` is a
+monotonically increasing numeric build number. Installer packaging accepts the
+same values:
+
+```zsh
+./make_installer.sh --version 0.1 --build 2
 ```
 
 Check the collectors against this Mac:

@@ -89,21 +89,22 @@ public final class FileLogCollector: LogCollector {
             return collectDirectory(interval: interval, limit: limit, progress: progress)
         }
 
-        guard let text = readTail(path: path, interval: interval, progress: progress) else {
+        switch readTail(path: path, interval: interval, progress: progress) {
+        case .success(let text):
+            progress(LoadProgress(fraction: 0.8, stage: "Parsing records"))
+            result.events = Array(parse(text, interval: interval).prefix(limit))
+            progress(LoadProgress(fraction: 1, stage: "Done", recordsSoFar: result.events.count))
+            if result.events.isEmpty {
+                result.diagnostics.append(DiagnosticEvent(
+                    collector: displayName, level: .info,
+                    message: text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                        ? "File is empty."
+                        : "No lines with a recognised timestamp in the selected range."))
+            }
+        case .failure(let error):
             result.diagnostics.append(DiagnosticEvent(
                 collector: displayName, level: .error,
-                message: "Cannot read \(path). Grant Full Disk Access and retry."))
-            return result
-        }
-        progress(LoadProgress(fraction: 0.8, stage: "Parsing records"))
-        result.events = Array(parse(text, interval: interval).prefix(limit))
-        progress(LoadProgress(fraction: 1, stage: "Done", recordsSoFar: result.events.count))
-        if result.events.isEmpty {
-            result.diagnostics.append(DiagnosticEvent(
-                collector: displayName, level: .info,
-                message: text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-                    ? "File is empty."
-                    : "No lines with a recognised timestamp in the selected range."))
+                message: Self.status(for: error, path: path).label))
         }
         return result
     }
@@ -113,16 +114,22 @@ public final class FileLogCollector: LogCollector {
     /// `/var/log/install.log` grows to hundreds of MB on a managed Mac. Reading
     /// it whole and filtering afterwards took ~30s per refresh; walking the
     /// file backwards in chunks from the newest end lets us stop as soon as the
-    /// lines predate the range. Returns nil only when the file is unreadable.
+    /// lines predate the range. Returns a structured failure when the file
+    /// cannot be opened so diagnostics can preserve the actual cause.
+    private enum ReadResult {
+        case success(String)
+        case failure(NSError)
+    }
+
     private func readTail(path: String, interval: DateInterval,
-                        progress: @escaping ProgressHandler) -> String? {
+                          progress: @escaping ProgressHandler) -> ReadResult {
         guard let handle = try? FileHandle(forReadingFrom: URL(fileURLWithPath: path)) else {
-            return FileManager.default.contents(atPath: path).map { String(decoding: $0, as: UTF8.self) }
+            return .failure(Self.readError(for: path))
         }
         defer { try? handle.close() }
 
         guard let fileSize = try? handle.seekToEnd() else {
-            return FileManager.default.contents(atPath: path).map { String(decoding: $0, as: UTF8.self) }
+            return .failure(Self.readError(for: path))
         }
 
         let chunkSize = 4 * 1024 * 1024
@@ -148,7 +155,24 @@ public final class FileLogCollector: LogCollector {
             // further back is older still — stop reading.
             if let oldest = oldestTimestamp(in: collected), oldest < interval.start { break }
         }
-        return collected.joined(separator: "\n")
+        return .success(collected.joined(separator: "\n"))
+    }
+
+    private static func readError(for path: String) -> NSError {
+        if let attributes = try? FileManager.default.attributesOfItem(atPath: path),
+           let type = attributes[.type] as? FileAttributeType,
+           type == .typeDirectory {
+            return NSError(domain: NSCocoaErrorDomain, code: NSFileReadInvalidFileNameError,
+                           userInfo: [NSFilePathErrorKey: path,
+                                      NSLocalizedDescriptionKey: "Expected a file but found a directory"])
+        }
+        if !FileManager.default.fileExists(atPath: path) {
+            return NSError(domain: NSCocoaErrorDomain, code: NSFileNoSuchFileError,
+                           userInfo: [NSFilePathErrorKey: path])
+        }
+        return NSError(domain: NSCocoaErrorDomain, code: NSFileReadUnknownError,
+                       userInfo: [NSFilePathErrorKey: path,
+                                  NSLocalizedDescriptionKey: "The file could not be opened"])
     }
 
     /// Oldest recognised timestamp in the given lines, if any.
@@ -170,10 +194,13 @@ public final class FileLogCollector: LogCollector {
                                    progress: @escaping ProgressHandler) -> CollectResult {
         var result = CollectResult()
         let fm = FileManager.default
-        guard let entries = try? fm.contentsOfDirectory(atPath: path) else {
+        let entries: [String]
+        do {
+            entries = try fm.contentsOfDirectory(atPath: path)
+        } catch let error as NSError {
             result.diagnostics.append(DiagnosticEvent(
                 collector: displayName, level: .error,
-                message: "Cannot list \(path). Grant Full Disk Access and retry."))
+                message: Self.status(for: error, path: path).label))
             return result
         }
 
@@ -266,7 +293,9 @@ public final class FileLogCollector: LogCollector {
         return LogEvent(
             timestamp: timestamp,
             process: owner,
-            executablePath: ProcessPathResolver.path(forProcessName: owner) ?? "—",
+            // A file line does not prove which executable wrote it. Keep the
+            // synthetic file-owner label, but do not attach a live process path.
+            executablePath: "—",
             message: message,
             subsystem: "file:\(path)",
             category: category,
@@ -377,12 +406,17 @@ public final class FileLogCollector: LogCollector {
         if chars.count >= syslogLen {
             let candidate = String(chars.prefix(syslogLen))
             if let ts = Self.syslog.date(from: candidate) {
-                // A bare "Oct  2 HH:mm:ss" has no year; DateFormatter uses 2000.
-                // Re-stamp with the current year so range filtering behaves.
-                let year = Calendar.current.component(.year, from: Date())
-                var comps = Calendar.current.dateComponents([.month, .day, .hour, .minute, .second], from: ts)
-                comps.year = year
-                if let fixed = Calendar.current.date(from: comps) {
+                // A bare "Oct  2 HH:mm:ss" has no year. Choose the year
+                // nearest to now so records around New Year are not moved
+                // outside the selected range.
+                let now = Date()
+                let currentYear = Calendar.current.component(.year, from: now)
+                let candidates = [currentYear - 1, currentYear, currentYear + 1].compactMap { year -> Date? in
+                    var comps = Calendar.current.dateComponents([.month, .day, .hour, .minute, .second], from: ts)
+                    comps.year = year
+                    return Calendar.current.date(from: comps)
+                }
+                if let fixed = candidates.min(by: { abs($0.timeIntervalSince(now)) < abs($1.timeIntervalSince(now)) }) {
                     return ParsedLine(timestamp: fixed, message: trimmedRemainder(line, after: syslogLen))
                 }
             }

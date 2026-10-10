@@ -7,17 +7,38 @@
 # it on any machine. If build_app.sh has not verified the signature, this
 # script refuses to run.
 #
-# Usage: ./make_installer.sh [--no-dmg]
+# Usage: ./make_installer.sh [--no-dmg] [--version VERSION] [--build NUMBER]
 set -euo pipefail
+setopt NULL_GLOB
 
 ROOT="$(cd "$(dirname "$0")" && pwd)"
 APP_NAME="MDM Inspector"
 BUNDLE_ID="com.local.mdminspector"
-VERSION="0.1"
+VERSION="${MDM_VERSION:-0.1}"
+BUILD_NUMBER="${MDM_BUILD_NUMBER:-1}"
+MAKE_DMG=1
+while (( $# > 0 )); do
+    case "$1" in
+        --no-dmg) MAKE_DMG=0 ;;
+        --version) [[ $# -ge 2 ]] || { echo "--version requires a value" >&2; exit 2; }; VERSION="$2"; shift ;;
+        --build) [[ $# -ge 2 ]] || { echo "--build requires a value" >&2; exit 2; }; BUILD_NUMBER="$2"; shift ;;
+        *) echo "unknown argument: $1" >&2; exit 2 ;;
+    esac
+    shift
+done
+[[ "$BUILD_NUMBER" =~ '^[0-9]+$' ]] || { echo "build number must be numeric: $BUILD_NUMBER" >&2; exit 2; }
+PACKAGE_VERSION="${VERSION}.${BUILD_NUMBER}"
 APP="$ROOT/build/$APP_NAME.app"
 OUT="$ROOT/build/dist"
 
 [[ -d "$APP" ]] || { echo "no app at $APP - run ./build_app.sh first" >&2; exit 1; }
+ACTUAL_VERSION="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$APP/Contents/Info.plist")"
+ACTUAL_BUILD="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' "$APP/Contents/Info.plist")"
+[[ "$ACTUAL_VERSION" == "$VERSION" && "$ACTUAL_BUILD" == "$BUILD_NUMBER" ]] || {
+    echo "app metadata is $ACTUAL_VERSION build $ACTUAL_BUILD; requested $VERSION build $BUILD_NUMBER" >&2
+    echo "run ./build_app.sh --version $VERSION --build $BUILD_NUMBER first" >&2
+    exit 1
+}
 
 # Gate on a valid signature rather than discovering the problem after shipping.
 codesign --verify --deep --strict "$APP" 2>/dev/null || {
@@ -37,11 +58,11 @@ echo "==> building .pkg"
 pkgbuild \
     --root "$STAGE" \
     --identifier "$BUNDLE_ID" \
-    --version "$VERSION" \
+    --version "$PACKAGE_VERSION" \
     --install-location "/" \
     "$OUT/$APP_NAME-$VERSION.pkg" 2>&1 | sed 's/^/    /'
 
-if [[ "${1:-}" != "--no-dmg" ]]; then
+if (( MAKE_DMG )); then
     echo "==> building .dmg"
     DMG_SRC="$OUT/dmgsrc"
     mkdir -p "$DMG_SRC"

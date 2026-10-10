@@ -19,6 +19,9 @@ jobs:
     name: Package Apple Silicon app
     runs-on: macos-15
     timeout-minutes: 30
+    env:
+      APP_VERSION: "0.1"
+      BUILD_NUMBER: ${{ github.run_number }}
 
     steps:
       - uses: actions/checkout@v4
@@ -32,21 +35,24 @@ jobs:
       - name: Build the arm64 app
         run: |
           test "$(uname -m)" = arm64
-          ./build_app.sh
+          ./build_app.sh --version "$APP_VERSION" --build "$BUILD_NUMBER"
           APP="build/MDM Inspector.app"
           test -x "$APP/Contents/MacOS/MDMInspector"
           test -f "$APP/Contents/Resources/MDMInspector.icns"
           test "$(lipo -archs "$APP/Contents/MacOS/MDMInspector")" = arm64
           codesign --verify --deep --strict "$APP"
 
+      - name: Run collector self-test
+        run: swift run -c release MDMInspectorSelfTest
+
       - name: Package app, DMG and PKG
         run: |
-          ./make_installer.sh
+          ./make_installer.sh --version "$APP_VERSION" --build "$BUILD_NUMBER"
           mkdir -p build/dist
           ditto -c -k --sequesterRsrc --keepParent \
             "build/MDM Inspector.app" "build/dist/MDM-Inspector.app.zip"
-          hdiutil verify "build/dist/MDM Inspector-0.1.dmg"
-          pkgutil --check-signature "build/dist/MDM Inspector-0.1.pkg" || true
+          hdiutil verify "build/dist/MDM Inspector-${APP_VERSION}.dmg"
+          pkgutil --check-signature "build/dist/MDM Inspector-${APP_VERSION}.pkg" || true
 
       - name: Write validation instructions
         run: |
