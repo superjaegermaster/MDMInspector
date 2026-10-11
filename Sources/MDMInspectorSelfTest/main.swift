@@ -91,6 +91,21 @@ struct SelfTest {
         check("multi-source search includes both categories",
               multi.searchBlob.contains("platform sso") && multi.searchBlob.contains("intune"))
 
+        let insightEvent = LogEvent(timestamp: Date(timeIntervalSince1970: 1_800_000_000),
+                                    process: "mdmclient", executablePath: "/usr/libexec/mdmclient",
+                                    message: "Profile installation failed: certificate expired",
+                                    subsystem: "com.apple.ManagedClient", category: "Install",
+                                    severity: .error, source: .mdm, eventType: "Profile",
+                                    rawRecord: "private raw payload that must not be sent",
+                                    collectorID: "unified")
+        let insightPrompt = LocalInsightRequest.prompt(for: insightEvent)
+        check("local insight prompt presents output as hypotheses, not findings",
+              insightPrompt.contains("AI-generated hypotheses") && insightPrompt.contains("not findings"))
+        check("local insight prompt excludes raw records and executable paths",
+              !insightPrompt.contains("private raw payload") && !insightPrompt.contains("/usr/libexec/mdmclient"))
+        check("local insight prompt includes selected error context",
+              insightPrompt.contains(insightEvent.message) && insightPrompt.contains(insightEvent.process))
+
         check("Jamf Daemon classifies as Jamf", SourceCategory.classify(process: "JamfDaemon") == .jamf)
         check("jamf binary classifies as Jamf", SourceCategory.classify(process: "jamf") == .jamf)
         check("JamfAgent classifies as Jamf", SourceCategory.classify(process: "JamfAgent") == .jamf)
