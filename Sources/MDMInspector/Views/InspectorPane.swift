@@ -14,6 +14,7 @@ public struct InspectorPane: View {
                     metadata(event)
                     if event.severity >= .error {
                         investigationAreas(investigationAreas(for: event))
+                        localInsight(event)
                     }
                     relatedEvents(event)
                     rawEvidence(event)
@@ -102,6 +103,45 @@ public struct InspectorPane: View {
                 }
             }
         }
+    }
+
+    @ViewBuilder
+    private func localInsight(_ event: LogEvent) -> some View {
+        VStack(alignment: .leading, spacing: 7) {
+            Text("APPLE LOCAL MODEL INSIGHT")
+                .font(.system(size: 10, weight: .bold)).foregroundStyle(.tertiary)
+            Button {
+                Task { await model.askForLocalInsight(for: event) }
+            } label: {
+                Label(model.isGeneratingLocalInsight && model.localInsightEventID == event.id
+                      ? "Thinking on this Mac…" : "Ask Apple local model for insight",
+                      systemImage: "sparkles")
+                    .font(.system(size: 11, weight: .medium))
+            }
+            .buttonStyle(.borderless)
+            .disabled(model.isGeneratingLocalInsight)
+            Text("Optional and on-device. Only a bounded summary of this error is provided; raw log evidence and paths are excluded.")
+                .font(.system(size: 10)).foregroundStyle(.secondary)
+            if model.localInsightEventID == event.id {
+                if let insight = model.localInsightText {
+                    Text("AI-generated hypotheses — not findings or root-cause determinations")
+                        .font(.system(size: 10, weight: .semibold))
+                        .foregroundStyle(.orange)
+                    Text(insight)
+                        .font(.system(size: 11))
+                        .fixedSize(horizontal: false, vertical: true)
+                        .textSelection(.enabled)
+                } else if let message = model.localInsightMessage {
+                    Text(message)
+                        .font(.system(size: 10)).foregroundStyle(.secondary)
+                }
+            }
+        }
+        .padding(9)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color(nsColor: .controlBackgroundColor))
+        .clipShape(RoundedRectangle(cornerRadius: 7))
+        .overlay(RoundedRectangle(cornerRadius: 7).stroke(.separator))
     }
 
     @ViewBuilder
