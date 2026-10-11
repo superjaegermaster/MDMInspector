@@ -104,6 +104,8 @@ Xcode dependency.
 
 **[Download the latest pre-built Apple Silicon app](https://github.com/superjaegermaster/MDMInspector/releases/latest/download/MDM-Inspector.app.zip)** — unzip it, move `MDM Inspector.app` to Applications, then Control-click it and choose **Open** on first launch.
 
+The current production release is **v0.1.1** (app version **0.1**, build **8**). It includes the optional selected-error Apple local-model insight described below, plus the macOS 27 and `fm license` prerequisites.
+
 A pre-built Apple Silicon release is published on the [GitHub Releases](https://github.com/superjaegermaster/MDMInspector/releases) page. Download `MDM-Inspector.app.zip` for the simplest install, unzip it, and move `MDM Inspector.app` to Applications. A DMG and PKG are included for users who prefer those formats.
 
 The release is built on an Apple Silicon GitHub runner and contains an arm64
@@ -120,9 +122,36 @@ source code does not need to change.
 ## Status
 
 Working: the three views, 55 sources covering macOS MDM internals, Workspace ONE,
-Intune, Jamf, Platform SSO and other MDM vendors, plus the permissions centre.
-Not built, on purpose: correlation, loop detection, root-cause claims. See
-[Known limits](#known-limits).
+Intune, Jamf, Platform SSO and other MDM vendors, the permissions centre, and an
+optional on-device Apple Foundation Models insight for selected error events.
+
+### Optional Apple local-model insight
+
+Select an **error-level** event in the Timeline and choose **Ask Apple local
+model for insight** in the Inspector. This is an explicitly user-triggered aid,
+not an automatic diagnosis. Every response is presented as **AI-generated
+hypotheses — not findings or root-cause determinations**. Review the original
+record and verify any suggested checks as an administrator.
+
+The insight action checks these prerequisites when clicked:
+
+- **macOS 27 or later**.
+- The Apple Foundation Models terms have been accepted. If they have not, open
+  Terminal, run `fm license`, review and accept the terms, then try again. The
+  app uses the read-only `fm license --status` command to verify acceptance; it
+  never accepts terms on your behalf.
+- Apple's on-device language model is available on this Mac.
+
+Analysis uses Apple's Foundation Models framework on the Mac. The prompt is a
+bounded summary of the selected event (process, severity, source, event type,
+subsystem, category and a shortened message). It excludes the raw record,
+executable path and neighboring events. Event messages can still contain
+sensitive text, so use the feature only when that selected-event context is
+appropriate to analyze. Suggested checks are limited to safe, reversible steps;
+AI-generated text can be wrong and must be independently verified.
+
+Not built, on purpose: automatic correlation, loop detection, or root-cause
+claims. See [Known limits](#known-limits).
 
 ## What it reads
 
