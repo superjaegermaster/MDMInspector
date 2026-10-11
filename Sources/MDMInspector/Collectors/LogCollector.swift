@@ -38,6 +38,37 @@ public struct LoadProgress: Equatable {
     public var recordsSoFar: Int = 0
 }
 
+/// Keeps the newest `capacity` values from an oldest-first sequence without
+/// retaining the whole sequence in memory. OSLogStore iterates forward, so
+/// collectors use this when a time slice can contain more records than the
+/// per-source cap.
+public struct BoundedTail<Element> {
+    private let capacity: Int
+    private var storage: [Element] = []
+    private var nextIndex = 0
+
+    public init(capacity: Int) {
+        self.capacity = max(0, capacity)
+    }
+
+    public mutating func append(_ element: Element) {
+        guard capacity > 0 else { return }
+        if storage.count < capacity {
+            storage.append(element)
+            if storage.count == capacity { nextIndex = 0 }
+        } else {
+            storage[nextIndex] = element
+            nextIndex = (nextIndex + 1) % capacity
+        }
+    }
+
+    /// Values in their original oldest-to-newest order.
+    public var values: [Element] {
+        guard storage.count == capacity, capacity > 0 else { return storage }
+        return Array(storage[nextIndex...]) + Array(storage[..<nextIndex])
+    }
+}
+
 /// Passed into `collect` so long-running reads can report progress.
 public typealias ProgressHandler = @Sendable (LoadProgress) -> Void
 
@@ -116,14 +147,10 @@ public final class UnifiedLogCollector: LogCollector {
         //   keep the newest `cap` is far too slow (minutes, pegging the CPU).
         //
         // We therefore walk the range backwards in fixed, NON-OVERLAPPING
-        // chunks, newest chunk first, keeping the newest `cap` records seen so
-        // far in a ring buffer, and stop the moment the cap is reached. Total
-        // work is proportional to what we actually consume rather than to the
-        // size of the selected range, and nothing is ever read twice.
-        // Chunks are walked newest-first, so the first records we keep ARE the
-        // newest of the range. Later (older) chunks only ever fill remaining
-        // slots — they must never evict a newer record, so this is a plain
-        // append with an early stop, not an evicting ring.
+        // chunks, newest chunk first. OSLogStore yields each chunk oldest-first,
+        // so every chunk is reduced to its newest tail before the global cap is
+        // filled. Total work is proportional to the newest chunks needed, and
+        // the cap never silently selects the oldest records in a busy chunk.
         var kept: [OSLogEntry] = []
         kept.reserveCapacity(cap)
         var cursor = interval.end
@@ -138,13 +165,15 @@ public final class UnifiedLogCollector: LogCollector {
             do {
                 let seq = try store.getEntries(
                     at: store.position(date: chunkStart),
-                    matching: NSPredicate(format: "timestamp >= %@ AND timestamp <= %@",
+                    matching: NSPredicate(format: "timestamp >= %@ AND timestamp < %@",
                                           chunkStart as NSDate, cursor as NSDate))
-                // Entries arrive oldest-first within the chunk.
-                for e in seq {
-                    kept.append(e)
-                    if kept.count >= cap { break }
-                }
+                // Entries arrive oldest-first within the chunk. Retain the
+                // newest tail, otherwise a busy chunk would hide its newest
+                // records when the cap is reached.
+                var chunkTail = BoundedTail<OSLogEntry>(capacity: cap)
+                for e in seq { chunkTail.append(e) }
+                let remaining = cap - kept.count
+                kept.append(contentsOf: chunkTail.values.suffix(remaining))
             } catch {
                 result.diagnostics.append(DiagnosticEvent(
                     collector: displayName, level: .error,

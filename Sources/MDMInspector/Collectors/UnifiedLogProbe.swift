@@ -62,7 +62,7 @@ public enum UnifiedLogProbe {
     /// this each call re-read the window, which is what pushed a full refresh
     /// past ten minutes.
     private static let cacheLock = NSLock()
-    nonisolated(unsafe) private static var cached: (at: Date, reading: Reading)?
+    nonisolated(unsafe) private static var cached: [Int: (at: Date, reading: Reading)] = [:]
 
     /// Seconds a probe result stays valid. Long enough to collapse a full
     /// refresh into one read, short enough that re-checking permissions after a
@@ -73,11 +73,12 @@ public enum UnifiedLogProbe {
     public static func readCached(window: TimeInterval = 300) -> Reading {
         cacheLock.lock()
         defer { cacheLock.unlock() }
-        if let c = cached, Date().timeIntervalSince(c.at) < ttl {
+        let key = max(1, Int(window.rounded()))
+        if let c = cached[key], Date().timeIntervalSince(c.at) < ttl {
             return c.reading
         }
         let r = read(window: window)
-        cached = (Date(), r)
+        cached[key] = (Date(), r)
         return r
     }
 
@@ -85,7 +86,7 @@ public enum UnifiedLogProbe {
     /// "re-check permissions" action.
     public static func invalidateCache() {
         cacheLock.lock()
-        cached = nil
+        cached.removeAll(keepingCapacity: true)
         cacheLock.unlock()
     }
 

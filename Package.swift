@@ -14,6 +14,7 @@ let package = Package(
         .target(
             name: "MDMInspectorKit",
             path: "Sources/MDMInspector",
+            exclude: ["Resources/Info.plist", "Resources/MDMInspector.icns"],
             swiftSettings: [.swiftLanguageMode(.v5)]
         ),
         // The shipping app: a thin @main shim over the kit.

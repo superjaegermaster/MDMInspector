@@ -96,13 +96,13 @@ final class VendorLogCollector: LogCollector {
                 let pred = NSCompoundPredicate(andPredicateWithSubpredicates: [
                     vendorPredicate,
                     NSPredicate(format: "timestamp >= %@", chunkStart as NSDate),
-                    NSPredicate(format: "timestamp <= %@", cursor as NSDate)
+                    NSPredicate(format: "timestamp < %@", cursor as NSDate)
                 ])
                 let seq = try store.getEntries(at: store.position(date: chunkStart), matching: pred)
-                for e in seq {
-                    out.append(e)
-                    if out.count >= cap { break }
-                }
+                var chunkTail = BoundedTail<OSLogEntry>(capacity: cap)
+                for e in seq { chunkTail.append(e) }
+                let remaining = cap - out.count
+                out.append(contentsOf: chunkTail.values.suffix(remaining))
                 n += 1
                 cursor = chunkStart
                 let fraction = out.count >= cap

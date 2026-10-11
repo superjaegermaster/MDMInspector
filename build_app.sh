@@ -1,15 +1,25 @@
 #!/bin/zsh
 # Builds MDM Inspector and assembles a double-clickable .app bundle.
-# Usage: ./build_app.sh [--debug]
+# Usage: ./build_app.sh [--debug] [--version VERSION] [--build NUMBER]
 set -euo pipefail
 
 CONFIG=release
-[[ "${1:-}" == "--debug" ]] && CONFIG=debug
+VERSION="${MDM_VERSION:-0.1}"
+BUILD_NUMBER="${MDM_BUILD_NUMBER:-1}"
+while (( $# > 0 )); do
+    case "$1" in
+        --debug) CONFIG=debug ;;
+        --version) [[ $# -ge 2 ]] || { echo "--version requires a value" >&2; exit 2; }; VERSION="$2"; shift ;;
+        --build) [[ $# -ge 2 ]] || { echo "--build requires a value" >&2; exit 2; }; BUILD_NUMBER="$2"; shift ;;
+        *) echo "unknown argument: $1" >&2; exit 2 ;;
+    esac
+    shift
+done
+[[ "$BUILD_NUMBER" =~ '^[0-9]+$' ]] || { echo "build number must be numeric: $BUILD_NUMBER" >&2; exit 2; }
 
 ROOT="$(cd "$(dirname "$0")" && pwd)"
 APP_NAME="MDM Inspector"
 BUNDLE_ID="com.local.mdminspector"
-VERSION="0.1"
 BUILD_DIR="$ROOT/build"
 APP="$BUILD_DIR/$APP_NAME.app"
 
@@ -48,7 +58,7 @@ cat > "$APP/Contents/Info.plist" <<PLIST
     <key>CFBundleIdentifier</key><string>$BUNDLE_ID</string>
     <key>CFBundlePackageType</key><string>APPL</string>
     <key>CFBundleShortVersionString</key><string>$VERSION</string>
-    <key>CFBundleVersion</key><string>$VERSION</string>
+    <key>CFBundleVersion</key><string>$BUILD_NUMBER</string>
     <key>CFBundleIconFile</key><string>MDMInspector</string>
     <key>LSMinimumSystemVersion</key><string>14.0</string>
     <key>NSHighResolutionCapable</key><true/>
