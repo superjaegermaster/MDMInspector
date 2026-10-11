@@ -4,256 +4,49 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-Something broke on a Mac. An app didn't install, a profile didn't apply, the Hub
-looks wedged. The answer is on the Mac, but it's scattered:
+MDM Inspector brings macOS and MDM logs into one timestamped timeline, with the original record one click away. For a selected error, you can optionally ask Apple's on-device model for troubleshooting ideas. Results are **AI-generated hypotheses—not findings or root-cause determinations**; an administrator must verify them.
 
-```
-/var/log/install.log                       macOS installer
-Unified log (hubd, mdmclient, AirWatch)      Hub + macOS management events
-/var/log/jamf.log                            Jamf client
-/Library/Logs/Microsoft/Intune             Intune agent
-~/Library/Logs/CompanyPortal.log           Company Portal
-/Library/Application Support/AirWatch/Data/Munki/managed installs/logs/
-                                             Workspace ONE ManagedSoftwareUpdate.log
-/Library/Logs/DiagnosticReports            Hub/hubd crash reports
-…plus Console.app, filtered by hand, every time
-```
+![MDM Inspector showing an error and an Apple local-model insight example](docs/screenshots/05-local-model-insight.png)
 
-You read install.log, find nothing conclusive, pivot to Console, filter by
-subsystem, wonder whether the failure was macOS or the agent that delivered the
-package, go read that agent's own log, notice the timestamps nearly line up, and
-start over.
+*Example only: model suggestions are hypotheses and may be incorrect. Check the original evidence before acting.*
 
-Everything you need is on one machine. What's missing is the ordering, and
-ordering is what scattered logs throw away.
+The app reads local Mac evidence only: no MDM-server queries, cloud backend, telemetry, or database.
 
-**"What happened on this Mac?"** — MDM Inspector puts those logs on one
-timeline, in order, to the millisecond. So you can see that the Hub download
-finished at `10:42:48.014`, installer started at `10:42:48.391`, and it failed at
-`10:42:52.123`. Three sources, one screen.
+## MDM coverage
 
-Run it on whatever Mac is in front of you. It reads that Mac and nothing else.
-When it shows you an error, the original log line is always one click away.
+Dedicated local log sources cover **Apple MDM, Microsoft Intune, Omnissa Workspace ONE (Intelligent Hub), Jamf Pro, Kandji, ManageEngine, and N-able**. Unified-log/process classification also recognizes **Addigy, Cognito, Hexnode, Meraki, Mosyle, Scalefusion, and SimpleMDM** when their records are present. Coverage is read-only; MDM Inspector does not configure devices or replace an MDM console.
 
-Built for Apple, Workspace ONE, Intune and Jamf administrators: the person who
-gets the call when something breaks, not the person watching a dashboard.
+Other local context includes Platform SSO, running processes, macOS install/update/security logs, Microsoft Defender for Endpoint, and selected app/network logs.
 
-No API, no cloud backend, no telemetry, no database. It tells you what the Mac
-knows, not what you assume happened in the console. If the local evidence shows a
-command arrived, it says the command arrived. It won't claim the server acted on
-it, because that evidence isn't here.
+## Optional Apple local-model insight
 
----
+Select an error-level Timeline event, then click **Ask Apple local model for insight** in the Inspector. It requires:
 
-## Screenshots
+- macOS 27 or later and Apple's on-device model available.
+- Apple Foundation Models terms accepted. If needed, run `fm license` in Terminal to review and accept them. The app checks with read-only `fm license --status`; it never accepts terms for you.
 
-### Dashboard
+The bounded prompt includes a short summary of the selected event, but excludes the raw record, executable path, and neighboring events. The event message may still contain sensitive text. Suggestions are limited to safe, reversible checks; verify them independently.
 
-Counts, recent errors, activity by source. Click an error to jump to it in the
-Timeline.
+## Download
 
-![Dashboard](docs/screenshots/01-dashboard.png)
+**[Download the latest Apple Silicon app](https://github.com/superjaegermaster/MDMInspector/releases/latest/download/MDM-Inspector.app.zip)** or see [all releases](https://github.com/superjaegermaster/MDMInspector/releases). Current release: **v0.1.1** (app version **0.1**, build **8**). The app is ad-hoc signed and not notarized; on first launch, Control-click it, choose **Open**, and confirm. The included PKG is unsigned.
 
-### Timeline and Inspector
+## Build and test
 
-Sources on the left, events in the middle, Inspector on the right.
-
-![Timeline and Inspector](docs/screenshots/02-timeline.png)
-
-### Raw evidence
-
-The original log record, selectable and copyable with `⇧⌘C`.
-
-![Raw evidence](docs/screenshots/03-inspector.png)
-
-### Capabilities
-
-What each source can actually read on this Mac.
-
-![Capabilities](docs/screenshots/04-capabilities.png)
-
----
-
-## Build and run
+Requires macOS 14+ and Swift 6. Apple local-model insights require macOS 27+.
 
 ```zsh
-./build_app.sh                         # release build, version 0.1, build 1
-./build_app.sh --version 0.1 --build 2 # explicit build metadata
-./build_app.sh --debug
+swift build -c release
+swift run -c release MDMInspectorSelfTest
+./build_app.sh --version 0.1 --build 8
 open "build/MDM Inspector.app"
 ```
 
-`CFBundleShortVersionString` is the user-facing version. `CFBundleVersion` is a
-monotonically increasing numeric build number. Installer packaging accepts the
-same values:
+To package installers, run `./make_installer.sh --version 0.1 --build 8`.
+`CFBundleShortVersionString` is the marketing version; `CFBundleVersion` is the numeric build number.
 
-```zsh
-./make_installer.sh --version 0.1 --build 2
-```
+## Limits and more detail
 
-Check the collectors against this Mac:
+MDM Inspector shows local evidence, not server-side actions or a confirmed cause. It does not correlate incidents automatically, detect loops, or manage devices. Unified-log access requires Full Disk Access; other sources report when unavailable.
 
-```zsh
-swift run -c release MDMInspectorSelfTest
-```
-
-macOS 14+ and the Swift 6 toolchain. Command Line Tools are enough — there's no
-Xcode dependency.
-
-## Downloading a ready-to-run app
-
-**[Download the latest pre-built Apple Silicon app](https://github.com/superjaegermaster/MDMInspector/releases/latest/download/MDM-Inspector.app.zip)** — unzip it, move `MDM Inspector.app` to Applications, then Control-click it and choose **Open** on first launch.
-
-The current production release is **v0.1.1** (app version **0.1**, build **8**). It includes the optional selected-error Apple local-model insight described below, plus the macOS 27 and `fm license` prerequisites.
-
-A pre-built Apple Silicon release is published on the [GitHub Releases](https://github.com/superjaegermaster/MDMInspector/releases) page. Download `MDM-Inspector.app.zip` for the simplest install, unzip it, and move `MDM Inspector.app` to Applications. A DMG and PKG are included for users who prefer those formats.
-
-The release is built on an Apple Silicon GitHub runner and contains an arm64
-binary. It is ad-hoc signed, not notarized with an Apple Developer ID. macOS
-therefore asks for a one-time validation: Control-click `MDM Inspector.app`,
-choose **Open**, then confirm **Open**. This is the expected validation for the
-pre-built download, not a build step. The same warning applies to the DMG and
-PKG copies.
-
-A future Developer ID signing and notarization setup can remove that validation
-step. It requires an Apple Developer Program membership and a certificate; the
-source code does not need to change.
-
-## Status
-
-Working: the three views, 55 sources covering macOS MDM internals, Workspace ONE,
-Intune, Jamf, Platform SSO and other MDM vendors, the permissions centre, and an
-optional on-device Apple Foundation Models insight for selected error events.
-
-### Optional Apple local-model insight
-
-Select an **error-level** event in the Timeline and choose **Ask Apple local
-model for insight** in the Inspector. This is an explicitly user-triggered aid,
-not an automatic diagnosis. Every response is presented as **AI-generated
-hypotheses — not findings or root-cause determinations**. Review the original
-record and verify any suggested checks as an administrator.
-
-The insight action checks these prerequisites when clicked:
-
-- **macOS 27 or later**.
-- The Apple Foundation Models terms have been accepted. If they have not, open
-  Terminal, run `fm license`, review and accept the terms, then try again. The
-  app uses the read-only `fm license --status` command to verify acceptance; it
-  never accepts terms on your behalf.
-- Apple's on-device language model is available on this Mac.
-
-Analysis uses Apple's Foundation Models framework on the Mac. The prompt is a
-bounded summary of the selected event (process, severity, source, event type,
-subsystem, category and a shortened message). It excludes the raw record,
-executable path and neighboring events. Event messages can still contain
-sensitive text, so use the feature only when that selected-event context is
-appropriate to analyze. Suggested checks are limited to safe, reversible steps;
-AI-generated text can be wrong and must be independently verified.
-
-Not built, on purpose: automatic correlation, loop detection, or root-cause
-claims. See [Known limits](#known-limits).
-
-## What it reads
-
-| Source | Where |
-|---|---|
-| Unified Log | `OSLogStore(scope: .system)` — every process, every subsystem |
-| **macOS MDM & platform** | unified: `com.apple.ManagedClient`, `mdmclient`, `installcoordination`, `mobileasset`, `SoftwareUpdate`, `amfi`; plus `/Library/Logs/ManagedClient/ManagedClient.log` |
-| Running Processes | kernel process list; gives name + executable path |
-| macOS | `/var/log/install.log`, `system.log`, `appfirewall.log`, `wifi.log`, `asl`, `DiagnosticReports` |
-| **Microsoft Intune** | `/Library/Logs/Microsoft/Intune`, `~/Library/Logs/Microsoft/Intune`, `IntuneScripts/`, `~/Library/Logs/CompanyPortal.log` |
-| Intune (unified log) | `com.microsoft.intune*`, processes `IntuneMDMDaemon` / `IntuneMDMAgent` / `IntuneMMA` |
-| **Jamf Pro** | `/var/log/jamf.log`, `jamfinstall.log`, `jamf_setup.log`, `JAMFChangeManagement.log`, `/usr/local/jamf/bin` |
-| Jamf (unified log) | `com.jamf*`, processes `jamf` / `JamfDaemon` / `JamfAgent` |
-| **Platform SSO** | `com.apple.AppSSO`, `com.apple.extensiblesso`, `com.apple.heimdal`, plus the vendor extension (Microsoft, Okta); `SSOExtension`, `AppSSOAgent`, `KerberosExtension`, `swcd` |
-| Workspace ONE / Intelligent Hub | unified `hubd`, `awagent`, `mdmclient`, AirWatch/Omnissa subsystems; `/Library/Logs/DiagnosticReports` for `Intelligent Hub*.crash` and `hubd*.crash`; `/Library/Application Support/AirWatch/Data/Munki/managed installs/logs/ManagedSoftwareUpdate.log`; `InstallInfo.plist`, `ManagedInstallReport.plist`, and `AppStatuses_WS1.plist` |
-| Kandji | unified `io.kandji*`; `/Library/Logs/Kandji` |
-| ManageEngine | `/Library/UEMS_Agent/logs` |
-| N-able | `/Library/Logs/N-central Agent`, `/var/log/N-able/N-agent` |
-| Microsoft Defender for Endpoint | `/Library/Logs/Microsoft/mdatp` |
-| Others | MSI, Adobe, Zscaler, Cisco, OneDrive, Microsoft AutoUpdate |
-
-Paths come from each vendor's documentation. Workspace ONE's macOS source list in
-[Omnissa's Device-Side Logging guide](https://docs.omnissa.com/TroubleshootingandLoggingGuide-VSaaS/WorkspaceONEUEMDevice-SideLogging)
-identifies `ManagedSoftwareUpdate.log`, the Managed Installs status plists,
-`AppStatuses_WS1.plist`, and Hub crash reports. The `/var/log/ws1-hub/` paths
-shown elsewhere in that document are under its Linux section, so MDM Inspector
-does not register them for macOS. The obvious guess is often wrong —
-`/Library/Logs/JAMF` doesn't exist; the client log is `/var/log/jamf.log`. A
-self-test pins these distinctions so they can't regress.
-
-Adding a source is one entry in `Collectors/CollectorRegistry.swift`. It then
-shows up in the sidebar, the filters and the Capabilities tab with no other
-changes.
-
-### One event, two sources
-
-Company Portal is both the Intune agent's user app and the host of the
-Enterprise SSO extension (`com.microsoft.CompanyPortalMac.ssoextension`) that
-brokers Entra ID for Platform SSO. Bucketing it either way hides it from someone.
-
-So `LogEvent.sources` is a list. A Company Portal record about an app install is
-Intune. A record about extensible-SSO registration is
-`Microsoft Intune · Platform SSO`, and filtering either category finds it.
-
-## Architecture
-
-```
-Sources/
-  MDMInspector/            library: models, collectors, views
-    Model/                 LogEvent, Severity, SourceCategory, TimeRange
-    Collectors/            LogCollector protocol + implementations
-    App/                   InspectorModel, the view state
-    Views/                 Dashboard, Timeline, Inspector, Capabilities
-  MDMInspectorApp/         @main shim
-  MDMInspectorSelfTest/    headless collector checks
-```
-
-`LogEvent` doesn't know or care where a record came from, so new collectors
-don't touch the UI.
-
-## What it won't do
-
-- Report a cause. No "root cause", no "stuck", no "loop detected". Errors get a
-  list of things worth checking, labelled as such.
-- Invent an executable path. If the process isn't running, it prints `—`.
-- Claim more than it read. Capped or windowed reads say so, with how much.
-- Drop evidence. Grouping reorders, it doesn't collapse. Grouped, Detailed and
-  Raw all show the same event count.
-- Call an uninstalled product a permissions problem.
-
-## Loading
-
-A load takes a few seconds, so there's a bar under the toolbar: the source being
-read, a live count of records found, and a percentage where one can be estimated.
-The dot and bar fill pulse gently.
-
-The count is real. Each collector reports what it has actually streamed and the
-model sums them, and a self-test asserts the running total ends up equal to the
-number of events loaded. Sources that can't estimate still advance the bar when
-they finish, so it never stalls or goes backwards.
-
-Vendor unified-log sources only search the last few minutes when none of their
-processes are running, and say so.
-
-## Known limits
-
-No custom date ranges, no automatic collapsing of repetitive events, no health
-scores, no root-cause claims, no loop detection, no PPPC payload generation, no
-remote investigation. The unified log needs Full Disk Access; every other source
-degrades quietly and says which one failed.
-
-## Contributing
-
-New to this, or new to GitHub? [CONTRIBUTING.md](CONTRIBUTING.md) explains the
-distinction that trips people up:
-
-- **Issues** — feature requests, bugs, questions
-- **Pull requests** — a proposed change to the code
-
-Bug and feature forms ask for what makes them actionable, including the raw log
-line. Usage questions are better in Discussions.
-
-## More detail
-
-[docs/INTERFACE.md](docs/INTERFACE.md) walks through every view and control.
+See the concise [interface guide](docs/INTERFACE.md), [contributing guide](CONTRIBUTING.md), or [license](LICENSE).
