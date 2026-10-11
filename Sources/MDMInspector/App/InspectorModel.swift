@@ -163,10 +163,27 @@ public final class InspectorModel: ObservableObject {
         localInsightText = nil
         localInsightMessage = nil
 
-        guard #available(macOS 26.0, *) else {
-            localInsightMessage = "Apple's on-device model requires macOS 26 or later."
+        let osMajorVersion = ProcessInfo.processInfo.operatingSystemVersion.majorVersion
+        guard osMajorVersion >= 27, #available(macOS 27.0, *) else {
+            localInsightMessage = "Apple local-model insights require macOS 27 or later."
             return
         }
+
+        do {
+            let licenseStatus = try LocalInsightPrerequisites.readLicenseStatus()
+            if let reason = LocalInsightPrerequisites.blockingReason(
+                osMajorVersion: osMajorVersion,
+                licenseStatusOutput: licenseStatus.output,
+                licenseStatusExitCode: licenseStatus.exitCode
+            ) {
+                localInsightMessage = reason
+                return
+            }
+        } catch {
+            localInsightMessage = "Could not check Apple Foundation Models terms. Verify `fm` is installed, then run `fm license --status` in Terminal."
+            return
+        }
+
         guard SystemLanguageModel.default.isAvailable else {
             localInsightMessage = "Apple's on-device model is unavailable. Check Apple Intelligence availability and try again later."
             return

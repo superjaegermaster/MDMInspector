@@ -105,6 +105,29 @@ struct SelfTest {
               !insightPrompt.contains("private raw payload") && !insightPrompt.contains("/usr/libexec/mdmclient"))
         check("local insight prompt includes selected error context",
               insightPrompt.contains(insightEvent.message) && insightPrompt.contains(insightEvent.process))
+        check("local insight blocks macOS versions below 27",
+              LocalInsightPrerequisites.blockingReason(osMajorVersion: 26,
+                                                        licenseStatusOutput: "Agreed to license FM1 version 1.0")?.contains("macOS 27") == true)
+        check("local insight blocks when the FM license is not accepted",
+              LocalInsightPrerequisites.blockingReason(osMajorVersion: 27,
+                                                        licenseStatusOutput: "License has not been accepted")?.contains("fm license") == true)
+        check("local insight proceeds only when macOS 27+ and FM terms are accepted",
+              LocalInsightPrerequisites.blockingReason(osMajorVersion: 27,
+                                                        licenseStatusOutput: "Agreed to license FM1 version 1.0 on 11 Oct 2026") == nil)
+        check("local insight blocks if the license status command fails",
+              LocalInsightPrerequisites.blockingReason(osMajorVersion: 27,
+                                                        licenseStatusOutput: "", licenseStatusExitCode: 1)?.lowercased().contains("could not verify") == true)
+        if FileManager.default.isExecutableFile(atPath: "/usr/bin/fm") {
+            do {
+                let fmStatus = try LocalInsightPrerequisites.readLicenseStatus()
+                check("fm license status check returns status without prompting",
+                      !fmStatus.output.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+            } catch {
+                check("fm license status check returns status without prompting", false)
+            }
+        } else {
+            print("SKIP  fm license status integration: /usr/bin/fm is not present")
+        }
 
         check("Jamf Daemon classifies as Jamf", SourceCategory.classify(process: "JamfDaemon") == .jamf)
         check("jamf binary classifies as Jamf", SourceCategory.classify(process: "jamf") == .jamf)

@@ -27,3 +27,47 @@ public enum LocalInsightRequest {
         """
     }
 }
+
+/// Checks the OS and the non-interactive `fm license --status` result before
+/// any Foundation Models request is made. It never prompts to accept terms.
+public enum LocalInsightPrerequisites {
+    public static func blockingReason(
+        osMajorVersion: Int,
+        licenseStatusOutput: String?,
+        licenseStatusExitCode: Int32 = 0
+    ) -> String? {
+        guard osMajorVersion >= 27 else {
+            return "Apple local-model insights require macOS 27 or later."
+        }
+        guard let licenseStatusOutput, licenseStatusExitCode == 0 else {
+            return "Could not verify Apple Foundation Models terms. Run `fm license --status` in Terminal and try again."
+        }
+        let status = licenseStatusOutput.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard status.range(of: "^Agreed to license\\b", options: [.regularExpression, .caseInsensitive]) != nil else {
+            return "Apple Foundation Models terms have not been accepted. Run `fm license` in Terminal to review and accept them, then try again."
+        }
+        return nil
+    }
+
+    /// Runs only the CLI's read-only status command; it does not display or
+    /// accept the license. Use the system executable shipped with macOS.
+    public static func readLicenseStatus() throws -> (output: String, exitCode: Int32) {
+        let candidates = ["/usr/bin/fm"] + (ProcessInfo.processInfo.environment["PATH"] ?? "")
+            .split(separator: ":")
+            .map { "\($0)/fm" }
+        guard let executable = candidates.first(where: { FileManager.default.isExecutableFile(atPath: $0) }) else {
+            throw NSError(domain: "LocalInsightPrerequisites", code: 1,
+                          userInfo: [NSLocalizedDescriptionKey: "The `fm` command was not found."])
+        }
+        let process = Process()
+        let pipe = Pipe()
+        process.executableURL = URL(fileURLWithPath: executable)
+        process.arguments = ["license", "--status"]
+        process.standardOutput = pipe
+        process.standardError = pipe
+        try process.run()
+        let data = pipe.fileHandleForReading.readDataToEndOfFile()
+        process.waitUntilExit()
+        return (String(decoding: data, as: UTF8.self), process.terminationStatus)
+    }
+}
