@@ -13,7 +13,8 @@ concurrency:
 jobs:
   build-and-test:
     name: Build and verify
-    runs-on: macos-15
+    # Foundation Models is available starting in the macOS 26 SDK.
+    runs-on: macos-26
     timeout-minutes: 25
 
     steps:
